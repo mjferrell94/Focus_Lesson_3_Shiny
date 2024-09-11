@@ -15,12 +15,13 @@ dashboardPage(
   
   dashboardSidebar(    
     sidebarMenu(
-    actionButton("sample","Sample"),
-    numericInput(inputId="corr", label="Correlation",value=0,min=-1, max=1),
-    checkboxInput("resfit","ResFit")
-  )
+      actionButton("sample","Sample"),
+      numericInput(inputId="corr", label="Correlation",value=0,min=-1, max=1),
+      checkboxInput("resfit","ResFit")
+    )
   ),
   
-  dashboardBody(plotOutput(output$Scatter)
-  )
+  dashboardBody(
+    plotOutput("Scatter")
+    )
 )

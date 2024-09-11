@@ -8,7 +8,6 @@
 #
 
 library(shiny)
-library(ggplot2)
 library(tidyverse)
 library(tidycensus)
 
@@ -16,9 +15,9 @@ my_key <- "e267f117801b2ef741e54620602b0903c5f4d3c8"
 
 
 function(input, output, session) {
-  data <- reactiveVal()
+  sample_data <- reactiveValues(my_sample = NULL)
   
-  observeEvent(input$sample){
+  observeEvent(input$sample, {
     data <- get_pums(
       variables = c("JWMNP", "PINCP"), #travel and income, likely need to subset out 0 travel time people... dont' worry about too much of that now!
       state = "PA",
@@ -26,11 +25,18 @@ function(input, output, session) {
       year = 2022,
       survey = "acs1",
       key = my_key
-    )
-    rows <- sample(1:nrow(data),100)
+    ) |>
+      mutate(JWMNP = as.numeric(JWMNP), PINCP = as.numeric(PINCP)) |>
+      filter(PINCP > 0)
     
-    output$Scatter <- renderPlot({
-      ggplot(data[rows,],aes(x=JWMNP,y=PINCP))+geom_point()
-    })
-  }
+    sample_data$my_sample <- data[sample(1:nrow(data),100), ] 
+      
+  })
+  
+  output$Scatter <- renderPlot({
+    if (!is.null(sample_data$my_sample)){
+      ggplot(sample_data$my_sample, aes(x=JWMNP, y=PINCP)) +
+        geom_point()
+    }
+  })
 }
