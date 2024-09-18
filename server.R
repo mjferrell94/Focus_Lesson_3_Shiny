@@ -42,16 +42,13 @@ function(input, output, session) {
   })
   
   
-  observeEvent(input$resfit,{  
     output$Fit <- renderTable({
     if (!is.null(sample_data$my_sample)){
       state_fit <- summary(lm(PINCP ~ JWMNP, data=sample_data$my_sample))
       state_fit$coefficients
+    } else {
+      "click on sample"
     }
-    
-  }
-  )
-    }
-  )
+    })
 
 }

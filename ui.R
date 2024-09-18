@@ -23,6 +23,8 @@ dashboardPage(
   
   dashboardBody(
     plotOutput("Scatter"),
-    tableOutput("Fit")
+    conditionalPanel("input.resfit",
+                     tableOutput("Fit")
+    )
     )
 )
