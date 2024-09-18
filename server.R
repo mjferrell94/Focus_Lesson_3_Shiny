@@ -25,6 +25,7 @@ PA_data <- get_pums(
   mutate(JWMNP = as.numeric(JWMNP), PINCP = as.numeric(PINCP)) |>
   filter(PINCP > 0)
 
+#We need a loading screen
 function(input, output, session) {
   sample_data <- reactiveValues(my_sample = NULL)
   
@@ -39,4 +40,18 @@ function(input, output, session) {
         geom_point()
     }
   })
+  
+  
+  observeEvent(input$resfit,{  
+    output$Fit <- renderTable({
+    if (!is.null(sample_data$my_sample)){
+      state_fit <- summary(lm(PINCP ~ JWMNP, data=sample_data$my_sample))
+      state_fit$coefficients
+    }
+    
+  }
+  )
+    }
+  )
+
 }

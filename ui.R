@@ -22,6 +22,7 @@ dashboardPage(
   ),
   
   dashboardBody(
-    plotOutput("Scatter")
+    plotOutput("Scatter"),
+    tableOutput("Fit")
     )
 )
