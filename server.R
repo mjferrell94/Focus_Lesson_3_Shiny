@@ -28,23 +28,31 @@ PA_data <- get_pums(
 #We need a loading screen
 function(input, output, session) {
   sample_data <- reactiveValues(my_sample = NULL)
+  sample_linreg <- reactiveValues(my_linreg = NULL)
   
   observeEvent(input$sample, {
     sample_data$my_sample <- PA_data[sample(1:nrow(PA_data),100), ] 
-      
+    sample_linreg$my_linreg <- lm(PINCP ~ JWMNP, data=sample_data$my_sample)
   })
   
   output$Scatter <- renderPlot({
     if (!is.null(sample_data$my_sample)){
+
+      if (input$resfit){
       ggplot(sample_data$my_sample, aes(x=JWMNP, y=PINCP)) +
-        geom_point()
+        geom_point()+geom_abline(slope = sample_linreg$my_linreg$coefficients[[2]], 
+                                 intercept=sample_linreg$my_linreg$coefficients[[1]] )
+      } else {
+        ggplot(sample_data$my_sample, aes(x=JWMNP, y=PINCP)) +
+          geom_point()
+      }
     }
   })
   
   
     output$Fit <- renderTable({
     if (!is.null(sample_data$my_sample)){
-      state_fit <- summary(lm(PINCP ~ JWMNP, data=sample_data$my_sample))
+      state_fit <- summary(sample_linreg$my_linreg)
       state_fit$coefficients
     } else {
       "click on sample"
