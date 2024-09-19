@@ -16,14 +16,15 @@ dashboardPage(
   dashboardSidebar(    
     sidebarMenu(
       actionButton("sample","Sample"),
-      numericInput(inputId="corr", label="Correlation",value=0,min=-1, max=1),
-      checkboxInput("resfit","ResFit")
+      numericInput(inputId="corr", label="Correlation",value=0,min=-1, max=1,step=.01),
+      checkboxInput("regline","Add Regression Line"),
+      checkboxInput("reg_output","Show Regression Output")
     )
   ),
   
   dashboardBody(
     plotOutput("Scatter"),
-    conditionalPanel("input.resfit",
+    conditionalPanel("input.reg_output",
                      tableOutput("Fit")
     )
     )

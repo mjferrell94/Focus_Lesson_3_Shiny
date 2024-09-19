@@ -26,6 +26,7 @@ PA_data <- get_pums(
   filter(PINCP > 0)
 
 #We need a loading screen
+
 function(input, output, session) {
   sample_data <- reactiveValues(my_sample = NULL)
   sample_linreg <- reactiveValues(my_linreg = NULL)
@@ -35,10 +36,12 @@ function(input, output, session) {
     sample_linreg$my_linreg <- lm(PINCP ~ JWMNP, data=sample_data$my_sample)
   })
   
+  #Code for rendering the regression plot. It changes whether a line is requested
+  #or not
   output$Scatter <- renderPlot({
     if (!is.null(sample_data$my_sample)){
 
-      if (input$resfit){
+      if (input$regline){
       ggplot(sample_data$my_sample, aes(x=JWMNP, y=PINCP)) +
         geom_point()+geom_abline(slope = sample_linreg$my_linreg$coefficients[[2]], 
                                  intercept=sample_linreg$my_linreg$coefficients[[1]] )
@@ -49,14 +52,22 @@ function(input, output, session) {
     }
   })
   
-  
-    output$Fit <- renderTable({
+  #Code for rendering the regression output table
+    output$Fit <- renderTable(rownames = TRUE,{
     if (!is.null(sample_data$my_sample)){
       state_fit <- summary(sample_linreg$my_linreg)
       state_fit$coefficients
     } else {
-      "click on sample"
+      "Click on the Sample button to begin"
     }
+    })
+    
+    
+  #Code for the correlation guessing game
+    observeEvent(input$corr,{
+      #Code for guessing stuff
+      r <- sqrt(sample_linreg$my_linreg$r.squared)
+      r_rounded <- round(r,3)
     })
 
 }
