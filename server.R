@@ -30,10 +30,12 @@ PA_data <- get_pums(
 function(input, output, session) {
   sample_data <- reactiveValues(my_sample = NULL)
   sample_linreg <- reactiveValues(my_linreg = NULL)
+  sample_corr <- reactiveValues(my_corr = NULL)
   
   observeEvent(input$sample, {
     sample_data$my_sample <- PA_data[sample(1:nrow(PA_data),100), ] 
     sample_linreg$my_linreg <- lm(PINCP ~ JWMNP, data=sample_data$my_sample)
+    sample_corr$my_corr <- round(sqrt(summary(sample_linreg$my_linreg)$r.squared),3)
   })
   
   #Code for rendering the regression plot. It changes whether a line is requested
@@ -65,9 +67,27 @@ function(input, output, session) {
     
   #Code for the correlation guessing game
     observeEvent(input$corr,{
-      #Code for guessing stuff
-      r <- sqrt(sample_linreg$my_linreg$r.squared)
-      r_rounded <- round(r,3)
+      if (!is.null(sample_data$my_sample)){
+        error <- abs(input$corr - sample_corr$my_corr) <= .05
+        
+        if(error){
+          
+          output$Corr_Guess <- renderText(paste("Nicely done! The actual correlation is", sample_corr$my_corr, sep=" "))
+          
+        } else {
+          
+          if(input$corr > sample_corr$my_corr){
+            
+          output$Corr_Guess <- renderText("Try guessing lower!")
+          } else {
+            
+            output$Corr_Guess <- renderText("Try guessing higher!")
+            
+          }
+        }
+
+      }
+
     })
 
 }

@@ -16,7 +16,7 @@ dashboardPage(
   dashboardSidebar(    
     sidebarMenu(
       actionButton("sample","Sample"),
-      numericInput(inputId="corr", label="Correlation",value=0,min=-1, max=1,step=.01),
+      numericInput(inputId="corr", label="Correlation",value=NULL,min=-1, max=1,step=.01),
       checkboxInput("regline","Add Regression Line"),
       checkboxInput("reg_output","Show Regression Output")
     )
@@ -26,6 +26,9 @@ dashboardPage(
     plotOutput("Scatter"),
     conditionalPanel("input.reg_output",
                      tableOutput("Fit")
+    ),
+    conditionalPanel("input.corr",
+                     textOutput("Corr_Guess")
     )
     )
 )
