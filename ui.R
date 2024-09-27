@@ -18,7 +18,8 @@ dashboardPage(
       actionButton("sample","Sample"),
       numericInput(inputId="corr", label="Correlation",value=NULL,min=-1, max=1,step=.01),
       checkboxInput("regline","Add Regression Line"),
-      checkboxInput("reg_output","Show Regression Output")
+      checkboxInput("reg_output","Show Regression Output"),
+      checkboxInput("sub_group","By Race")
     )
   ),
   
