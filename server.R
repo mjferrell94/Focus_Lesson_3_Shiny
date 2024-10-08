@@ -9,109 +9,132 @@
 
 library(shiny)
 library(tidyverse)
-library(tidycensus)
-
-my_key <- "e267f117801b2ef741e54620602b0903c5f4d3c8"
-
-#just for now!
-PA_data <- get_pums(
-  variables = c("JWMNP", "PINCP", "RAC1P"), #travel and income, likely need to subset out 0 travel time people... dont' worry about too much of that now!
-  state = "PA",
-  recode = TRUE,
-  year = 2022,
-  survey = "acs1",
-  key = my_key
-  ) |>
-  mutate(JWMNP = as.numeric(JWMNP), PINCP = as.numeric(PINCP)) |>
-  filter(PINCP > 0, RAC1P %in% c(1,2)) |>
-  mutate(RAC1P = recode(RAC1P, `1`="White",`2`="Black")) |>
-  rename(Race = RAC1P)
-
-#We need a loading screen
 
 function(input, output, session) {
-  sample_data <- reactiveValues(my_sample = NULL)
-  sample_linreg <- reactiveValues(my_linreg = NULL, by_race_linreg = NULL)
-  sample_corr <- reactiveValues(my_corr = NULL)
   
-  observeEvent(input$sample, {
-    sample_data$my_sample <- PA_data |> group_by(Race) |> slice_sample(n=50)
-    sample_linreg$my_linreg <- lm(PINCP ~ JWMNP, data=sample_data$my_sample)
-    sample_linreg$by_race_linreg <- lm(PINCP ~ JWMNP+as.factor(Race), data=sample_data$my_sample)
-    sample_corr$my_corr <- round(sqrt(summary(sample_linreg$my_linreg)$r.squared),3)
+  
+  #################################################3
+  ##Correlation tab
+  sample_corr <- reactiveValues(corr_data = NULL, corr_truth = NULL)
+  
+  #make sure two variables are selected
+  observeEvent(input$corr_sample, {
+    
+    if(length(input$corr_vars) != 2) {
+      shinyalert(title = "Exactly Two Variables are Required",
+                 "Please select two variables and try again.",
+                 type = "error")
+    } else {
+      if(input$hhl_corr == "all"){
+        hhl_sub <- HHLvals
+      } else if(input$hhl_corr == "english"){
+        hhl_sub <- HHLvals["1"]
+      } else if(input$hhl_corr == "spanish"){
+        hhl_sub <- HHLvals["2"]
+      } else {
+        hhl_sub <- HHLvals[c("0", "3", "4", "5")]
+      }
+      
+      if(input$fs_corr == "all"){
+        fs_sub <- FSvals
+      } else if(input$fs_corr == "yes"){
+        fs_sub <- FSvals["1"]
+      } else {
+        fs_sub <- FSvals["2"]
+      }
+      
+      if(input$schl_corr == "all"){
+        schl_sub <- SCHLvals
+      } else if(input$schl_corr == "no_hs"){
+        schl_sub <- SCHLvals[as.character(0:15)]
+      } else if(input$schl_corr == "hs"){
+        schl_sub <- SCHLvals[as.character(16:19)]
+      } else {
+        schl_sub <- SCHLvals[as.character(20:24)]
+      }
+      
+      subsetted_data <- my_sample |>
+        filter(#cat vars first
+          HHLfac %in% hhl_sub,
+          FSfac %in% fs_sub,
+          SCHLfac %in% schl_sub
+        ) %>% #make sure numeric variables are in appropriate range, must use %>% here for {} to work
+        {if("WKHP" %in% input$corr_vars) filter(., WKHP > 0) else .} %>%
+        {if("VALP" %in% input$corr_vars) filter(., !is.na(VALP)) else .} %>%
+        {if("TAXAMT" %in% input$corr_vars) filter(., !is.na(TAXAMT)) else .} %>%
+        {if("GRPIP" %in% input$corr_vars) filter(., GRPIP > 0) else .} %>%
+        {if("GASP" %in% input$corr_vars) filter(., GASP > 0) else .} %>%
+        {if("ELEP" %in% input$corr_vars) filter(., ELEP > 0) else .} %>%
+        {if("WATP" %in% input$corr_vars) filter(., WATP > 0) else .} %>%
+        {if("PINCP" %in% input$corr_vars) filter(., AGEP > 18) else .} %>%
+        {if("JWMNP" %in% input$corr_vars) filter(., !is.na(JWMNP)) else .} 
+        
+      index <- sample(1:nrow(subsetted_data), 
+                      size = input$corr_n, 
+                      replace = TRUE, 
+                      prob = subsetted_data$PWGTP/sum(subsetted_data$PWGTP))
+      sample_corr$corr_data <- subsetted_data[index, ]
+      sample_corr$corr_truth <- cor(sample_corr$corr_data |> 
+                                      select(input$corr_vars))[1,2]
+    }
   })
   
+  
+
   #Code for rendering the regression plot. It changes whether a line is requested
   #or not
-  output$Scatter <- renderPlot({
-    if (!is.null(sample_data$my_sample)){
-      
-      #This is when subgroup button is pressed
-      if (input$sub_group){
-        
-        if (input$regline){
-          ggplot(sample_data$my_sample, aes(x=JWMNP, y=PINCP, color=Race)) +
-            geom_point()+geom_smooth(method="lm", fill=NA) 
-        } else {
-          ggplot(sample_data$my_sample, aes(x=JWMNP, y=PINCP, color=Race)) +
-            geom_point()
-        }
-        
-      #This is when subgroup button is not pressed
-      } else {
-        
-      if (input$regline){
-      ggplot(sample_data$my_sample, aes(x=JWMNP, y=PINCP)) +
-        geom_point()+geom_smooth(method="lm", fill=NA)
-      } else {
-        ggplot(sample_data$my_sample, aes(x=JWMNP, y=PINCP)) +
-          geom_point()
-      }
-    }
-  }
+  output$corr_scatter <- renderPlot({
+    validate(
+      need(!is.null(sample_corr$corr_data), "Please select your variables, subset, and click the 'Get a Sample!' button.")
+    )
+    ggplot(sample_corr$corr_data, aes_string(x = input$corr_vars[1], y = input$corr_vars[2])) +
+      geom_point()
     })
   
-  #Code for rendering the regression output table
-    output$Fit <- renderTable(rownames = TRUE,{
-    if (!is.null(sample_data$my_sample)){
-      
-      #If subgroup button is on, we'll display this one
-      if(input$sub_group){
-        by_group_fit <- summary(sample_linreg$by_race_linreg)
-        by_group_fit$coefficients
-        
-      #If subgroup button is not on
-      } else {
-      state_fit <- summary(sample_linreg$my_linreg)
-      state_fit$coefficients
-    } 
-    }
-      })
     
     
   #Code for the correlation guessing game
-    observeEvent(input$corr,{
-      if (!is.null(sample_data$my_sample)){
-        error <- abs(input$corr - sample_corr$my_corr) <= .05
-        
-        if(error){
-          
-          output$Corr_Guess <- renderText(paste("Nicely done! The actual correlation is", sample_corr$my_corr, sep=" "))
-          
-        } else {
-          
-          if(input$corr > sample_corr$my_corr){
-            
-          output$Corr_Guess <- renderText("Try guessing lower!")
-          } else {
-            
-            output$Corr_Guess <- renderText("Try guessing higher!")
-            
-          }
-        }
-
+  observeEvent(input$corr_submit, {
+    close <- abs(input$corr_guess - sample_corr$corr_truth) <= .05
+    if(close){
+      shinyalert(title = "Nicely done!",
+                 paste0("The sample correlation is ", 
+                        round(sample_corr$corr_truth, 4), 
+                        "."),
+                 type = "success"
+                 )
+    } else {
+      if(input$corr_guess > sample_corr$corr_truth){
+        shinyalert(title = "Try again!",
+                   "Try guessing a lower value.")
+      } else {
+        shinyalert(title = "Try again!",
+                   "Try guessing a higher value.")
       }
+    }
+  })
 
-    })
-
+    
+    ########################################################3
+    ##SLR stuff
+    sample_data <- reactiveValues(my_sample = NULL)
+    sample_linreg <- reactiveValues(my_linreg = NULL, by_race_linreg = NULL)
+    
+    # #Code for rendering the regression output table
+    # output$Fit <- renderTable(rownames = TRUE,{
+    #   if (!is.null(sample_data$my_sample)){
+    #     
+    #     #If subgroup button is on, we'll display this one
+    #     if(input$sub_group){
+    #       by_group_fit <- summary(sample_linreg$by_race_linreg)
+    #       by_group_fit$coefficients
+    #       
+    #       #If subgroup button is not on
+    #     } else {
+    #       state_fit <- summary(sample_linreg$my_linreg)
+    #       state_fit$coefficients
+    #     } 
+    #   }
+    # })
+    
 }
