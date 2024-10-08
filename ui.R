@@ -14,11 +14,11 @@ library(shinyjs)
 
 source("helpers.R")
 
-# my_key <- "e267f117801b2ef741e54620602b0903c5f4d3c8"
-# 
-# # # #get big sample for the first part that is common to everyone
-# #switching to loop due to error. (turns out it was a Puerto Rico issue - has a different API)
-# #oregon (41) returns a curl_fecth_memory error...
+#my_key <- "e267f117801b2ef741e54620602b0903c5f4d3c8"
+
+# # #get big sample for the first part that is common to everyone
+#switching to loop due to error. (turns out it was a Puerto Rico issue - has a different API)
+#oregon (41) returns a curl_fecth_memory error...
 # my_sample <- list()
 # for (i in 1:length(state_codes)){
 #   if(i == 41){
@@ -28,7 +28,13 @@ source("helpers.R")
 #   my_sample[[i]] <- get_sample(var = names(variable_info), state = names(state_codes)[i], year = 2022)
 #   print(i/length(state_codes))
 # }
-# 
+#temp <- get_sample(var = names(variable_info), state = names(state_codes)[41], year = 2022)
+#my_sample[[41]] <- temp
+#saveRDS(my_sample, file = 'full_list.rds')
+
+#combine list elements
+#my_sample_all <- do.call(rbind, my_sample)
+
 # #convert everything to factors & handle special cases
 # my_sample2 <- my_sample %>%
 #   mutate(HHLfac = factor(as.character(HHL), labels = HHLvals, levels = names(HHLvals)),
@@ -54,10 +60,8 @@ source("helpers.R")
 #            VALP = ifelse(VALP == 0, NA, VALP) #0 Vacant, no occupied/being bought
 #            #WKHP 0 can be NA or didn't work
 #           )
-# 
-# saveRDS(my_sample2, file = 'my_sample.rds')
-# 
-# my_sample <- readRDS("my_sample.rds")
+
+#saveRDS(my_sample_all, file = 'my_sample.rds')
 
 
 dashboardPage(

@@ -10,6 +10,8 @@
 library(shiny)
 library(tidyverse)
 
+my_sample <- readRDS("my_sample_temp.rds")
+
 function(input, output, session) {
   
   
@@ -87,7 +89,7 @@ function(input, output, session) {
     validate(
       need(!is.null(sample_corr$corr_data), "Please select your variables, subset, and click the 'Get a Sample!' button.")
     )
-    ggplot(sample_corr$corr_data, aes_string(x = input$corr_vars[1], y = input$corr_vars[2])) +
+    ggplot(sample_corr$corr_data, aes_string(x = isolate(input$corr_vars)[1], y = isolate(input$corr_vars)[2])) +
       geom_point()
     })
   
