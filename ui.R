@@ -234,7 +234,36 @@ dashboardPage(
               titlePanel("Comparing Models"),
               sidebarLayout(
                 sidebarPanel(
-                  "temp3"
+                  h2("Choose your variables (must select two):"),
+                  selectizeInput("comp_vars",
+                                 label = "",
+                                 choices = c("Travel time to work" = "JWMNP",
+                                             "Total person's income" = "PINCP",
+                                             "Water cost" = "WATP",
+                                             "Electricity cost" = "ELEP",
+                                             "Gas cost" = "GASP",
+                                             "Gross rent as a percentage of income" = "GRPIP",
+                                             "Property taxes" = "TAXAMT",
+                                             "Property value" = "VALP",
+                                             "Usual hours worked per week" = "WKHP",
+                                             "Age" = "AGEP"
+                                 ), 
+                                 selected = c("PINCP", "AGEP"),
+                                 multiple = TRUE
+                  ),
+                  h2("Choose which groups to compare"),
+                  radioButtons("groups_comp",
+                               "Groups",
+                               choiceValues = c("snap", 
+                                                "school",
+                                                "lang"
+                               ),
+                               choiceNames = c("SNAP vs no SNAP",
+                                               "College vs no College",
+                                               "English vs Spanish"
+                               )
+                  )
+                
                 ),
                 mainPanel(
                   "temp4"
