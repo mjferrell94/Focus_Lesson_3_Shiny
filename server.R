@@ -342,3 +342,52 @@ function(input, output, session) {
       }
     })
 }
+
+#################################################3
+##Group SLR Stuff
+sample_group <- reactiveValues(group_data = NULL, group_ls = NULL)
+
+#update input boxes so they can't choose the same variable
+observeEvent(c(input$group_x, input$group_y), {
+  group_x <- input$group_x
+  group_y <- input$group_y
+  choices <- numeric_vars
+  if (group_x == group_y){
+    choices <- choices[-which(choices == group_x)]
+    updateSelectizeInput(session,
+                         "group_y",
+                         choices = choices)
+  }
+})
+
+#make sure two variables are selected #Error here for some reason
+observeEvent(input$group_sample, {
+  
+  group_vars <- c(input$group_x, input$group_y)
+  
+  subsetted_data <- my_sample |>
+    mutate(SCHLvals = ifelse(SCHLvals %in% SCHLvals[as.character(20:24)],"College","No College")) |>
+    filter(#cat vars first
+      HHLvals %in% c("English Only","Spanish"),
+      FSvals %in% c("Yes","No")
+    ) %>% #make sure numeric variables are in appropriate range, must use %>% here for {} to work
+    {if("WKHP" %in% group_vars) filter(., WKHP > 0) else .} %>%
+    {if("VALP" %in% group_vars) filter(., !is.na(VALP)) else .} %>%
+    {if("TAXAMT" %in% group_vars) filter(., !is.na(TAXAMT)) else .} %>%
+    {if("GRPIP" %in% group_vars) filter(., GRPIP > 0) else .} %>%
+    {if("GASP" %in% group_vars) filter(., GASP > 0) else .} %>%
+    {if("ELEP" %in% group_vars) filter(., ELEP > 0) else .} %>%
+    {if("WATP" %in% group_vars) filter(., WATP > 0) else .} %>%
+    {if("PINCP" %in% group_vars) filter(., AGEP > 18) else .} %>%
+    {if("JWMNP" %in% group_vars) filter(., !is.na(JWMNP)) else .} 
+    
+    
+  
+  index <- sample(1:nrow(subsetted_data), 
+                  size = input$group_n, 
+                  replace = TRUE, 
+                  prob = subsetted_data$PWGTP/sum(subsetted_data$PWGTP))
+  sample_group$group_data <- subsetted_data[index, ]
+  sample_group$group_ls <- lm(get(input$group_y) ~ get(input$group_x), data = sample_group$group_data)
+})
+
