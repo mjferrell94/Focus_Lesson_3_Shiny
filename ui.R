@@ -245,42 +245,42 @@ dashboardPage(
               titlePanel("Comparing Models"),
               sidebarLayout(
                 sidebarPanel(
-                  h2("Choose your variables (must select two):"),
-                  selectizeInput("comp_vars",
-                                 label = "",
-                                 choices = c("Travel time to work" = "JWMNP",
-                                             "Total person's income" = "PINCP",
-                                             "Water cost" = "WATP",
-                                             "Electricity cost" = "ELEP",
-                                             "Gas cost" = "GASP",
-                                             "Gross rent as a percentage of income" = "GRPIP",
-                                             "Property taxes" = "TAXAMT",
-                                             "Property value" = "VALP",
-                                             "Usual hours worked per week" = "WKHP",
-                                             "Age" = "AGEP"
-                                 ), 
-                                 selected = c("PINCP", "AGEP"),
-                                 multiple = TRUE
-                  ),
+                  h2("Choose Your Variables:"),
+                  selectizeInput("group_x",
+                                 "Explanatory (x) Variable",
+                                 choices = numeric_vars[-1], 
+                                 selected = numeric_vars[2]),
+                  selectizeInput("group_y",
+                                 "Reponse (y) Variable",
+                                 choices = numeric_vars[-2],
+                                 selected = numeric_vars[1]),
                   h2("Choose which groups to compare"),
                   radioButtons("groups_comp",
                                "Groups",
                                choiceValues = c("snap", 
                                                 "school",
                                                 "lang"
-                               ),
+                          ),
                                choiceNames = c("SNAP vs no SNAP",
                                                "College vs no College",
                                                "English vs Spanish"
                                )
-                  )
+                  ),
+                  h2("Select a Sample Size"),
+                  sliderInput("group_n", "", min = 20, max = 500, value = 20),
+                  actionButton("group_sample","Get a New Sample!")
                 
                 ),
                 mainPanel(
-                  "temp4"
+                  "Hello"
+                  #fluidRow(
+                    #plotOutput("comp_scatter")
+                  #)
                 )
               )
       )
     )
   )
 )
+
+#Need to 
