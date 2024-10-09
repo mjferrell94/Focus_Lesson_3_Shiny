@@ -213,13 +213,14 @@ dashboardPage(
                     div(style="display:flex;",
                         sliderInput("slr_int", 
                                      "Intercept",
-                                     min = -500,
-                                     max = 500,
+                                     min = -50,
+                                     max = 50,
                                      value = 0),
+                         div(style = "padding: 7px;"),
                          sliderInput("slr_slope", 
                                      "Slope",
-                                     min = -500,
-                                     max = 500,
+                                     min = -50,
+                                     max = 50,
                                      value = 0)
                          )
                   ),
@@ -228,13 +229,13 @@ dashboardPage(
                     ),
                   fluidRow(
                     column(3,
-                           checkboxInput("add_resid_user", "Show Residuals?", value = FALSE),
+                           checkboxInput("add_resid_user", "Show Residuals From Your Line?", value = FALSE),
                            checkboxInput("add_ls_line", "Show Least Squares Line?", value = FALSE),
                            conditionalPanel("input.add_ls_line", 
-                                            checkboxInput("add_resid_ls", "Show Residuals?", value = FALSE))
+                                            checkboxInput("add_resid_ls", "Show Residuals From the Least Squares Line?", value = FALSE))
                            ),
                     column(9,
-                           textOutput("slr_info")
+                           tableOutput("slr_info")
                     )
                   )
                 )

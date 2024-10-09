@@ -87,7 +87,7 @@ function(input, output, session) {
                     prob = subsetted_data$PWGTP/sum(subsetted_data$PWGTP))
     sample_corr$corr_data <- subsetted_data[index, ]
     sample_corr$corr_truth <- cor(sample_corr$corr_data |> 
-                                    select(corr_vars))[1,2]
+                                    select(all_of(corr_vars)))[1,2]
   })
   
   
@@ -203,8 +203,15 @@ function(input, output, session) {
     #create all the residuals and find the SSE/MSE for both lines
     observeEvent(c(input$slr_sample, input$slr_int, input$slr_slope), {
       slr_data <- sample_slr$slr_data
-      
     })
+    
+    #update input boxes so they can't choose the same variable
+    observeEvent(input$add_ls_line, {
+      if(!input$add_ls_line){
+        updateCheckboxInput(session, "add_resid_ls", value = FALSE)
+      }
+      })
+
     
     #Create graph
     output$slr_scatter <- renderPlot({
@@ -216,6 +223,7 @@ function(input, output, session) {
       user_line <- function(x){
         input$slr_int + input$slr_slope * x
       }
+      colors <- c("User Line" = "green", "Least Squares Line" = "blue")
       #values for plotting purposes
       x_values <- slr_data |> 
         pull(input$slr_x)
@@ -225,16 +233,71 @@ function(input, output, session) {
       y_max <- max(c(user_line(x_min), user_line(x_max)))
       g <- ggplot(sample_slr$slr_data, aes_string(x = isolate(input$slr_x), y = isolate(input$slr_y))) +
         geom_point() +
-        geom_line(data = data.frame(x = c(x_min, x_max), y = c(user_line(x_min), user_line(x_max))), aes(x = x, y = y))
+        geom_line(data = data.frame(x = c(x_min, x_max), y = c(user_line(x_min), user_line(x_max))), aes(x = x, y = y, color = "User Line"))
+      
+      if(input$add_resid_user){
+        #find the deviations from the user line to each data point
+        user_y <- user_line(x_values)
+        true_y <- slr_data |>
+          pull(input$slr_y)
+        user_resids <- true_y - user_y
+        user_resid_df <- data.frame(x = x_values, true_y = true_y, user_y = user_y)
+        g <- g +
+          geom_segment(data = user_resid_df, aes(x = x_values, xend = x_values, y = true_y, yend = user_y, color = "User Line"), lty = "dashed")
+      }
       if(input$add_ls_line){
         g <- g +
-          geom_smooth(method = "lm", se = FALSE)
+          geom_smooth(method = "lm", se = FALSE, aes(color = "Least Squares Line"))
       }
-      g
+      if(input$add_resid_ls){
+        #find the deviations from the LS line to each data point
+        fit <- sample_slr$slr_ls
+        coefs <- coef(fit)
+        ls_y <- coefs[1] + coefs[2]*x_values
+        true_y <- slr_data |>
+          pull(input$slr_y)
+        ls_resids <- true_y - ls_y
+        ls_resid_df <- data.frame(x = x_values, true_y = true_y, ls_y = ls_y)
+        g <- g +
+          geom_segment(data = ls_resid_df, aes(x = x_values, xend = x_values, y = true_y, yend = ls_y, color = "Least Squares Line"))
+      }
+      g + 
+        labs(color = "Legend") + 
+        scale_color_manual(values = colors)
+        
     })
     
-    output$slr_info <- renderText({
-      "temp text"
+    output$slr_info <- renderTable({
+      if(!input$slr_sample){
+        NULL
+      } else {
+        #find the SSE for the user line
+        slr_data <- sample_slr$slr_data
+        user_line <- function(x){
+          input$slr_int + input$slr_slope * x
+        }
+        x_values <- slr_data |> 
+          pull(input$slr_x)
+        user_y <- user_line(x_values)
+        true_y <- slr_data |>
+          pull(input$slr_y)
+        user_resids <- true_y - user_y
+        results <- data.frame("Line" = "User Line", "SSE" = round(sum(user_resids^2), 2), "MSE" = round(sum(user_resids^2)/(input$slr_n-2), 2), "RMSE" = round(sqrt(sum(user_resids^2)/(input$slr_n-2)), 2))
+        if(input$add_ls_line){
+          fit <- sample_slr$slr_ls
+          coefs <- coef(fit)
+          ls_y <- coefs[1] + coefs[2]*x_values
+          true_y <- slr_data |>
+            pull(input$slr_y)
+          ls_resids <- true_y - ls_y
+          results[2, ] <- c("Least Squares Line", 
+                            round(sum(ls_resids^2), 4), 
+                            round(sum(ls_resids^2)/(input$slr_n-2), 4),
+                            round(sqrt(sum(ls_resids^2)/(input$slr_n-2)), 2))
+          print(summary(fit)$sigma)
+        }
+        results
+      }
     })
     
 }
