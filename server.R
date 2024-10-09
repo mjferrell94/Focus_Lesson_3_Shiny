@@ -341,7 +341,6 @@ function(input, output, session) {
           facet_grid(~line)
       }
     })
-}
 
 #################################################3
 ##Group SLR Stuff
@@ -390,4 +389,6 @@ observeEvent(input$group_sample, {
   sample_group$group_data <- subsetted_data[index, ]
   sample_group$group_ls <- lm(get(input$group_y) ~ get(input$group_x), data = sample_group$group_data)
 })
+
+}
 
