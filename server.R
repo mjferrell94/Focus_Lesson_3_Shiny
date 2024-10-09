@@ -205,11 +205,14 @@ function(input, output, session) {
       slr_data <- sample_slr$slr_data
     })
     
-    #update input boxes so they can't choose the same variable
-    observeEvent(input$add_ls_line, {
-      if(!input$add_ls_line){
-        updateCheckboxInput(session, "add_resid_ls", value = FALSE)
-      }
+    #update graphs
+    observeEvent(input$add_to_plot, {
+        if(!("Show Least Squares Line" %in% isolate(input$add_to_plot))){
+          updateCheckboxGroupInput(session, "add_to_plot", choices = c("Show User Line Residuals", "Show Least Squares Line"), inline = TRUE, selected = isolate(input$add_to_plot))
+        }
+        if("Show Least Squares Line" %in% isolate(input$add_to_plot)){
+          updateCheckboxGroupInput(session, "add_to_plot", choices = c("Show User Line Residuals", "Show Least Squares Line", "Show Least Squares Line Residuals"), selected = isolate(input$add_to_plot), inline = TRUE)
+        }
       })
 
     
@@ -234,8 +237,7 @@ function(input, output, session) {
       g <- ggplot(sample_slr$slr_data, aes_string(x = isolate(input$slr_x), y = isolate(input$slr_y))) +
         geom_point() +
         geom_line(data = data.frame(x = c(x_min, x_max), y = c(user_line(x_min), user_line(x_max))), aes(x = x, y = y, color = "User Line"))
-      
-      if(input$add_resid_user){
+      if("Show User Line Residuals" %in% input$add_to_plot){
         #find the deviations from the user line to each data point
         user_y <- user_line(x_values)
         true_y <- slr_data |>
@@ -245,21 +247,21 @@ function(input, output, session) {
         g <- g +
           geom_segment(data = user_resid_df, aes(x = x_values, xend = x_values, y = true_y, yend = user_y, color = "User Line"), lty = "dashed")
       }
-      if(input$add_ls_line){
+      if("Show Least Squares Line" %in% input$add_to_plot){
         g <- g +
           geom_smooth(method = "lm", se = FALSE, aes(color = "Least Squares Line"))
-      }
-      if(input$add_resid_ls){
-        #find the deviations from the LS line to each data point
-        fit <- sample_slr$slr_ls
-        coefs <- coef(fit)
-        ls_y <- coefs[1] + coefs[2]*x_values
-        true_y <- slr_data |>
-          pull(input$slr_y)
-        ls_resids <- true_y - ls_y
-        ls_resid_df <- data.frame(x = x_values, true_y = true_y, ls_y = ls_y)
-        g <- g +
-          geom_segment(data = ls_resid_df, aes(x = x_values, xend = x_values, y = true_y, yend = ls_y, color = "Least Squares Line"))
+        if("Show Least Squares Line Residuals" %in% input$add_to_plot){
+          #find the deviations from the LS line to each data point
+          fit <- sample_slr$slr_ls
+          coefs <- coef(fit)
+          ls_y <- coefs[1] + coefs[2]*x_values
+          true_y <- slr_data |>
+            pull(input$slr_y)
+          ls_resids <- true_y - ls_y
+          ls_resid_df <- data.frame(x = x_values, true_y = true_y, ls_y = ls_y)
+          g <- g +
+            geom_segment(data = ls_resid_df, aes(x = x_values, xend = x_values, y = true_y, yend = ls_y, color = "Least Squares Line"))
+        }
       }
       g + 
         labs(color = "Legend") + 
@@ -283,7 +285,7 @@ function(input, output, session) {
           pull(input$slr_y)
         user_resids <- true_y - user_y
         results <- data.frame("Line" = "User Line", "SSE" = round(sum(user_resids^2), 2), "MSE" = round(sum(user_resids^2)/(input$slr_n-2), 2), "RMSE" = round(sqrt(sum(user_resids^2)/(input$slr_n-2)), 2))
-        if(input$add_ls_line){
+        if((("Show Least Squares Line" %in% input$add_to_plot) & (input$tabset1 == "Scatter Plot with Line(s)")) | ((input$tabset1 == "Residual Plot(s)") & input$plot_slr_resid)){
           fit <- sample_slr$slr_ls
           coefs <- coef(fit)
           ls_y <- coefs[1] + coefs[2]*x_values
@@ -300,4 +302,43 @@ function(input, output, session) {
       }
     })
     
+    #Create graph
+    output$slr_residual <- renderPlot({
+      validate(
+        need(!is.null(sample_slr$slr_data), "Please select your variables, subset, and click the 'Get a Sample!' button.")
+      )
+      #data and user values for line
+      slr_data <- sample_slr$slr_data
+      user_line <- function(x){
+        input$slr_int + input$slr_slope * x
+      }
+      #values for plotting purposes
+      x_values <- slr_data |> 
+        pull(input$slr_x)
+      user_y <- user_line(x_values)
+      true_y <- slr_data |>
+        pull(input$slr_y)
+      user_resids <- true_y - user_y
+      
+      if(!input$plot_slr_resid){
+        #create one resid plot
+        resid_df <- data.frame(x = x_values, y = user_resids)
+        ggplot(resid_df, aes(x = x, y = y)) +
+          geom_point() +
+          geom_segment(x = min(x_values), xend = max(x_values), y = 0, yend = 0)
+      } else {
+        fit <- sample_slr$slr_ls
+        coefs <- coef(fit)
+        ls_y <- coefs[1] + coefs[2]*x_values
+        true_y <- slr_data |>
+          pull(input$slr_y)
+        ls_resids <- true_y - ls_y
+        
+        resid_df <- data.frame(x = rep(x_values, 2), y = c(user_resids, ls_resids), line = factor(c(rep("User", length(x_values)), rep("Least Squares", length(x_values))), levels = c("User", "Least Squares")))
+        ggplot(resid_df, aes(x = x, y = y)) +
+          geom_point() +
+          geom_segment(x = min(x_values), xend = max(x_values), y = 0, yend = 0) +
+          facet_grid(~line)
+      }
+    })
 }

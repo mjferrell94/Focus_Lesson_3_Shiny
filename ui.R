@@ -90,7 +90,8 @@ dashboardPage(
                   selectizeInput("corr_y",
                                  "y Variable",
                                  choices = numeric_vars[-2],
-                                 selected = numeric_vars[1]),                  h2("Choose a subset of the data:"),
+                                 selected = numeric_vars[1]),
+                  h2("Choose a subset of the data:"),
                   radioButtons("hhl_corr",
                                "Household Language",
                                choiceValues = c("all", 
@@ -133,19 +134,25 @@ dashboardPage(
                   actionButton("corr_sample","Get a Sample!")
                 ),
                 mainPanel(
-                  plotOutput("corr_scatter"),
+                  box(title = "Scatter Plot", 
+                      status = "primary",
+                      width = 12,
+                      plotOutput("corr_scatter")
+                  ),
                   conditionalPanel("input.corr_sample",
-                                   h2("Guess the correlation!"),
-                                   column(6, 
-                                          numericInput("corr_guess",
-                                                "",
-                                                value = 0,
-                                                min = -1, 
-                                                max = 1
-                                                )
+                                   box(title = "Guess the correlation!",
+                                       width = 6,
+                                       numericInput("corr_guess",
+                                                    "",
+                                                    value = 0,
+                                                    min = -1, 
+                                                    max = 1
+                                                    )
                                           ),
-                                   column(6, 
-                                          actionButton("corr_submit", "Check Your Guess!"))
+                                   box(
+                                     width = 4,
+                                     actionButton("corr_submit", "Check Your Guess!")
+                                     )
                   )
                 )
               )
@@ -210,32 +217,45 @@ dashboardPage(
                     h3("Create your own line!")
                   ), 
                   fluidRow(
-                    div(style="display:flex;",
-                        sliderInput("slr_int", 
-                                     "Intercept",
-                                     min = -50,
-                                     max = 50,
-                                     value = 0),
-                         div(style = "padding: 7px;"),
-                         sliderInput("slr_slope", 
-                                     "Slope",
-                                     min = -50,
-                                     max = 50,
-                                     value = 0)
-                         )
+                    box(
+                      width = 6,
+                      sliderInput("slr_int", 
+                                  "Intercept",
+                                  min = -50,
+                                  max = 50,
+                                  value = 0)
+                    ),
+                    box(
+                      width = 6,
+                      sliderInput("slr_slope", 
+                                  "Slope",
+                                  min = -50,
+                                  max = 50,
+                                  value = 0)
+                    )
                   ),
                   fluidRow(
-                    plotOutput("slr_scatter")
+                    tabBox(
+                      id = "tabset1",
+                      width = 12,
+                      tabPanel("Scatter Plot with Line(s)", 
+                               plotOutput("slr_scatter"),
+                               conditionalPanel("input.slr_sample",
+                                                checkboxGroupInput("add_to_plot", "", choices = c("Show User Line Residuals", "Show Least Squares Line"), inline = TRUE)
+                                                )
+                               ),
+                      tabPanel("Residual Plot(s)", 
+                               plotOutput("slr_residual"),
+                               checkboxInput("plot_slr_resid", "Show Least Squares Line Residual Plot")
+                               )
+                      )
                     ),
                   fluidRow(
-                    column(3,
-                           checkboxInput("add_resid_user", "Show Residuals From Your Line?", value = FALSE),
-                           checkboxInput("add_ls_line", "Show Least Squares Line?", value = FALSE),
-                           conditionalPanel("input.add_ls_line", 
-                                            checkboxInput("add_resid_ls", "Show Residuals From the Least Squares Line?", value = FALSE))
-                           ),
-                    column(9,
-                           tableOutput("slr_info")
+                    conditionalPanel("input.slr_sample",
+                      box(
+                        width = 9,
+                        tableOutput("slr_info")
+                      )
                     )
                   )
                 )
