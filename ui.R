@@ -11,6 +11,7 @@ library(shiny)
 library(shinydashboard)
 library(shinyalert)
 library(shinyjs)
+library(tidyverse)
 
 source("helpers.R")
 
@@ -81,24 +82,15 @@ dashboardPage(
               titlePanel("Correlation Exploration"),
               sidebarLayout(
                 sidebarPanel(
-                  h2("Find Correlation Between (must select two):"),
-                  selectizeInput("corr_vars",
-                                     label = "",
-                                     choices = c("Travel time to work" = "JWMNP",
-                                                     "Total person's income" = "PINCP",
-                                                     "Water cost" = "WATP",
-                                                     "Electricity cost" = "ELEP",
-                                                     "Gas cost" = "GASP",
-                                                     "Gross rent as a percentage of income" = "GRPIP",
-                                                     "Property taxes" = "TAXAMT",
-                                                     "Property value" = "VALP",
-                                                     "Usual hours worked per week" = "WKHP",
-                                                     "Age" = "AGEP"
-                                                     ), 
-                                     selected = c("PINCP", "AGEP"),
-                                 multiple = TRUE
-                  ),
-                  h2("Choose a subset of the data:"),
+                  h2("Select Variables to Find Correlation:"),
+                  selectizeInput("corr_x",
+                                 "x Variable",
+                                 choices = numeric_vars[-1], 
+                                 selected = numeric_vars[2]),
+                  selectizeInput("corr_y",
+                                 "y Variable",
+                                 choices = numeric_vars[-2],
+                                 selected = numeric_vars[1]),                  h2("Choose a subset of the data:"),
                   radioButtons("hhl_corr",
                                "Household Language",
                                choiceValues = c("all", 
@@ -214,9 +206,12 @@ dashboardPage(
                   actionButton("slr_sample","Get a New Sample!")
                 ),
                 mainPanel(
-                  column(3, 
-                         h3("Create your own line!"),
-                         sliderInput("slr_int", 
+                  fluidRow(
+                    h3("Create your own line!")
+                  ), 
+                  fluidRow(
+                    div(style="display:flex;",
+                        sliderInput("slr_int", 
                                      "Intercept",
                                      min = -500,
                                      max = 500,
@@ -227,6 +222,21 @@ dashboardPage(
                                      max = 500,
                                      value = 0)
                          )
+                  ),
+                  fluidRow(
+                    plotOutput("slr_scatter")
+                    ),
+                  fluidRow(
+                    column(3,
+                           checkboxInput("add_resid_user", "Show Residuals?", value = FALSE),
+                           checkboxInput("add_ls_line", "Show Least Squares Line?", value = FALSE),
+                           conditionalPanel("input.add_ls_line", 
+                                            checkboxInput("add_resid_ls", "Show Residuals?", value = FALSE))
+                           ),
+                    column(9,
+                           textOutput("slr_info")
+                    )
+                  )
                 )
               )
       ),
