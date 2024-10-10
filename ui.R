@@ -284,7 +284,7 @@ dashboardPage(
                                choiceNames = c("SNAP vs no SNAP",
                                                "College vs no College",
                                                "English vs Spanish"
-                               )
+                               ), selected = character(0)
                   ),
                   h2("Select a Sample Size"),
                   sliderInput("group_n", "", min = 20, max = 500, value = 20),
@@ -292,10 +292,9 @@ dashboardPage(
                 
                 ),
                 mainPanel(
-                  "Hello"
-                  #fluidRow(
-                    #plotOutput("comp_scatter")
-                  #)
+                  fluidRow(
+                    plotOutput("group_scatter")
+                  )
                 )
               )
       )
@@ -303,4 +302,3 @@ dashboardPage(
   )
 )
 
-#Need to 

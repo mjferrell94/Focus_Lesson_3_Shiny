@@ -365,10 +365,10 @@ observeEvent(input$group_sample, {
   group_vars <- c(input$group_x, input$group_y)
   
   subsetted_data <- my_sample |>
-    mutate(SCHLvals = ifelse(SCHLvals %in% SCHLvals[as.character(20:24)],"College","No College")) |>
+    mutate(SCHLfac = ifelse(SCHLfac %in% SCHLvals[as.character(20:24)],"College","No College")) |>
     filter(#cat vars first
-      HHLvals %in% c("English Only","Spanish"),
-      FSvals %in% c("Yes","No")
+      HHLfac %in% c("English Only","Spanish"),
+      FSfac %in% c("Yes","No")
     ) %>% #make sure numeric variables are in appropriate range, must use %>% here for {} to work
     {if("WKHP" %in% group_vars) filter(., WKHP > 0) else .} %>%
     {if("VALP" %in% group_vars) filter(., !is.na(VALP)) else .} %>%
@@ -388,7 +388,85 @@ observeEvent(input$group_sample, {
                   prob = subsetted_data$PWGTP/sum(subsetted_data$PWGTP))
   sample_group$group_data <- subsetted_data[index, ]
   sample_group$group_ls <- lm(get(input$group_y) ~ get(input$group_x), data = sample_group$group_data)
+
+    
+  })
+
+observeEvent(input$groups_comp, {
+  
+  if(input$groups_comp=="snap"){
+    output$group_scatter <- renderPlot({
+      validate(
+        need(!is.null(sample_group$group_data), "Please select your variables and click the 'Get a Sample!' button.")
+      )
+      #data and user values for line
+      group_data <- sample_group$group_data %>% group_by(FSfac)
+      print(group_data)
+      
+      #values for plotting purposes
+      x_values <- group_data |> 
+        pull(input$group_x)
+      x_min <- min(x_values)
+      x_max <- max(x_values)
+      
+      g <- ggplot(sample_group$group_data, aes_string(x = isolate(input$group_x), y = isolate(input$group_y))) +
+        geom_point() +
+        geom_smooth(method = "lm", se = FALSE, color=FSfac)
+      
+      g
+      
+      
+    })
+  }
+  if (input$groups_comp=="college"){
+    output$group_scatter <- renderPlot({
+      validate(
+        need(!is.null(sample_group$group_data), "Please select your variables and click the 'Get a Sample!' button.")
+      )
+      #data and user values for line
+      group_data <- sample_group$group_data %>% group_by(SCHLfac)
+      
+      #values for plotting purposes
+      x_values <- group_data |> 
+        pull(input$group_x)
+      x_min <- min(x_values)
+      x_max <- max(x_values)
+      
+      g <- ggplot(sample_group$group_data, aes_string(x = isolate(input$group_x), y = isolate(input$group_y))) +
+        geom_point() +
+        geom_smooth(method = "lm", se = FALSE, color="blue")
+      
+      g
+      
+      
+    })
+  }
+  if (input$groups_comp=="lang"){
+    output$group_scatter <- renderPlot({
+      validate(
+        need(!is.null(sample_group$group_data), "Please select your variables and click the 'Get a Sample!' button.")
+      )
+      #data and user values for line
+      group_data <- sample_group$group_data %>% group_by(HHLfac)
+      
+      #values for plotting purposes
+      x_values <- group_data |> 
+        pull(input$group_x)
+      x_min <- min(x_values)
+      x_max <- max(x_values)
+      
+      g <- ggplot(sample_group$group_data, aes_string(x = isolate(input$group_x), y = isolate(input$group_y))) +
+        geom_point() +
+        geom_smooth(method = "lm", se = FALSE, color="blue")
+      
+      g
+      
+      
+    })
+  }
 })
 
 }
+
+
 
