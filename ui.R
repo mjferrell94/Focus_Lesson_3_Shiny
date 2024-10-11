@@ -12,6 +12,7 @@ library(shinydashboard)
 library(shinyalert)
 library(shinyjs)
 library(tidyverse)
+library(plotly)
 
 source("helpers.R")
 
@@ -137,7 +138,7 @@ dashboardPage(
                   box(title = "Scatter Plot", 
                       status = "primary",
                       width = 12,
-                      plotOutput("corr_scatter")
+                      plotlyOutput("corr_scatter")
                   ),
                   conditionalPanel("input.corr_sample",
                                    box(title = "Guess the correlation!",
@@ -239,13 +240,13 @@ dashboardPage(
                       id = "tabset1",
                       width = 12,
                       tabPanel("Scatter Plot with Line(s)", 
-                               plotOutput("slr_scatter"),
+                               plotlyOutput("slr_scatter"),
                                conditionalPanel("input.slr_sample",
                                                 checkboxGroupInput("add_to_plot", "", choices = c("Show User Line Residuals", "Show Least Squares Line"), inline = TRUE)
                                                 )
                                ),
                       tabPanel("Residual Plot(s)", 
-                               plotOutput("slr_residual"),
+                               plotlyOutput("slr_residual"),
                                checkboxInput("plot_slr_resid", "Show Least Squares Line Residual Plot")
                                )
                       )
@@ -254,8 +255,12 @@ dashboardPage(
                     conditionalPanel("input.slr_sample",
                       box(
                         width = 9,
-                        tableOutput("slr_info")
-                      )
+                        tableOutput("slr_info"),
+                        conditionalPanel("input.add_to_plot.includes('Show Least Squares Line')",
+                                         h4("Simple Linear Regression Fit"),
+                                         tableOutput("slr_ls_info")
+                                         )
+                        )
                     )
                   )
                 )

@@ -9,6 +9,7 @@
 
 library(shiny)
 library(tidyverse)
+library(plotly)
 
 my_sample <- readRDS("my_sample_temp.rds")
 
@@ -94,12 +95,13 @@ function(input, output, session) {
 
   #Code for rendering the regression plot. It changes whether a line is requested
   #or not
-  output$corr_scatter <- renderPlot({
+  output$corr_scatter <- renderPlotly({
     validate(
       need(!is.null(sample_corr$corr_data), "Please select your variables, subset, and click the 'Get a Sample!' button.")
     )
-    ggplot(sample_corr$corr_data, aes_string(x = isolate(input$corr_x), y = isolate(input$corr_y))) +
-      geom_point()
+    g <- ggplot(sample_corr$corr_data, aes_string(x = isolate(input$corr_x), y = isolate(input$corr_y))) +
+      geom_point() 
+    ggplotly(g)
     })
   
     
@@ -217,7 +219,7 @@ function(input, output, session) {
 
     
     #Create graph
-    output$slr_scatter <- renderPlot({
+    output$slr_scatter <- renderPlotly({
       validate(
         need(!is.null(sample_slr$slr_data), "Please select your variables, subset, and click the 'Get a Sample!' button.")
       )
@@ -234,38 +236,87 @@ function(input, output, session) {
       x_max <- max(x_values)
       y_min <- min(c(user_line(x_min), user_line(x_max)))
       y_max <- max(c(user_line(x_min), user_line(x_max)))
-      g <- ggplot(sample_slr$slr_data, aes_string(x = isolate(input$slr_x), y = isolate(input$slr_y))) +
-        geom_point() +
-        geom_line(data = data.frame(x = c(x_min, x_max), y = c(user_line(x_min), user_line(x_max))), aes(x = x, y = y, color = "User Line"))
-      if("Show User Line Residuals" %in% input$add_to_plot){
-        #find the deviations from the user line to each data point
-        user_y <- user_line(x_values)
-        true_y <- slr_data |>
-          pull(input$slr_y)
-        user_resids <- true_y - user_y
-        user_resid_df <- data.frame(x = x_values, true_y = true_y, user_y = user_y)
-        g <- g +
-          geom_segment(data = user_resid_df, aes(x = x_values, xend = x_values, y = true_y, yend = user_y, color = "User Line"), lty = "dashed")
-      }
-      if("Show Least Squares Line" %in% input$add_to_plot){
-        g <- g +
+      
+      #add residuals and such to data
+      slr_data$x_values <- x_values
+      #user stuff
+      user_y <- user_line(x_values)
+      true_y <- slr_data |>
+        pull(input$slr_y)
+      user_resids <- true_y - user_y
+      
+      slr_data$User_Residual <- user_resids
+      slr_data$user_y <- user_y
+      
+      #slr stuff
+      fit <- sample_slr$slr_ls
+      coefs <- coef(fit)
+      ls_y <- coefs[1] + coefs[2]*x_values
+      ls_resids <- true_y - ls_y
+      
+      slr_data$ls_y <- ls_y
+      slr_data$Least_Squares_Residual <- round(ls_resids, 3)
+      
+      #create full plots within if then else to get tooltip right...
+      if(!("Show User Line Residuals" %in% input$add_to_plot) & !("Show Least Squares Line" %in% input$add_to_plot)){
+        #create base plot  
+        g <- ggplot(slr_data, aes_string(x = isolate(input$slr_x), y = isolate(input$slr_y))) +
+          geom_point() +
+          geom_line(data = data.frame(x = seq(from = x_min, to = x_max, length = 500), y = user_line(seq(from = x_min, to = x_max, length = 500))), aes(x = x, y = y, color = "User Line")) + 
+          labs(color = "Legend") + 
+          scale_color_manual(values = colors)
+        tooltip <- c("x", "y", "color")
+        ggplotly(g, tooltip = tooltip)
+      } else if(("Show User Line Residuals" %in% input$add_to_plot) & !("Show Least Squares Line" %in% input$add_to_plot)){
+        g <- ggplot(slr_data, aes_string(x = isolate(input$slr_x), y = isolate(input$slr_y))) +
+          geom_point(aes(label = User_Residual)) +
+          geom_line(data = data.frame(x = seq(from = x_min, to = x_max, length = 500), y = user_line(seq(from = x_min, to = x_max, length = 500))), aes(x = x, y = y, color = "User Line")) +
+          geom_segment(aes(x = x_values, xend = x_values, y = true_y, yend = user_y, color = "User Line", label = User_Residual), linetype = "dashed", linewidth = 0.25)+ 
+          labs(color = "Legend") + 
+          scale_color_manual(values = colors)
+        tooltip <- c("x", "y", "color", "label")
+        ggplotly(g, tooltip = tooltip)
+      } else if(!("Show User Line Residuals" %in% input$add_to_plot) & ("Show Least Squares Line" %in% input$add_to_plot) & !("Show Least Squares Line Residuals" %in% input$add_to_plot)){
+        g <- ggplot(slr_data, aes_string(x = isolate(input$slr_x), y = isolate(input$slr_y))) +
+          geom_point(aes(label = User_Residual)) +
+          geom_line(data = data.frame(x = seq(from = x_min, to = x_max, length = 500), y = user_line(seq(from = x_min, to = x_max, length = 500))), aes(x = x, y = y, color = "User Line")) +
           geom_smooth(method = "lm", se = FALSE, aes(color = "Least Squares Line"))
-        if("Show Least Squares Line Residuals" %in% input$add_to_plot){
-          #find the deviations from the LS line to each data point
-          fit <- sample_slr$slr_ls
-          coefs <- coef(fit)
-          ls_y <- coefs[1] + coefs[2]*x_values
-          true_y <- slr_data |>
-            pull(input$slr_y)
-          ls_resids <- true_y - ls_y
-          ls_resid_df <- data.frame(x = x_values, true_y = true_y, ls_y = ls_y)
-          g <- g +
-            geom_segment(data = ls_resid_df, aes(x = x_values, xend = x_values, y = true_y, yend = ls_y, color = "Least Squares Line"))
-        }
-      }
-      g + 
+          labs(color = "Legend") + 
+          scale_color_manual(values = colors)
+        tooltip <- c("x", "y", "color")
+        ggplotly(g, tooltip = tooltip)
+      } else if(("Show User Line Residuals" %in% input$add_to_plot) & ("Show Least Squares Line" %in% input$add_to_plot) & !("Show Least Squares Line Residuals" %in% input$add_to_plot)){
+        g <- ggplot(slr_data, aes_string(x = isolate(input$slr_x), y = isolate(input$slr_y))) +
+          geom_point(aes(label = User_Residual)) +
+          geom_line(data = data.frame(x = seq(from = x_min, to = x_max, length = 500), y = user_line(seq(from = x_min, to = x_max, length = 500))), aes(x = x, y = y, color = "User Line")) +
+          geom_smooth(method = "lm", se = FALSE, aes(color = "Least Squares Line")) +
+          geom_segment(aes(x = x_values, xend = x_values, y = true_y, yend = user_y, color = "User Line", label = User_Residual), linetype = "dashed", linewidth = 0.25)+ 
         labs(color = "Legend") + 
-        scale_color_manual(values = colors)
+          scale_color_manual(values = colors)
+        tooltip <- c("x", "y", "color", "label")
+        ggplotly(g, tooltip = tooltip)
+      } else if(!("Show User Line Residuals" %in% input$add_to_plot) & ("Show Least Squares Line" %in% input$add_to_plot) & ("Show Least Squares Line Residuals" %in% input$add_to_plot)){
+        g <- ggplot(slr_data, aes_string(x = isolate(input$slr_x), y = isolate(input$slr_y))) +
+          geom_point(aes(label = Least_Squares_Residual)) +
+          geom_line(data = data.frame(x = seq(from = x_min, to = x_max, length = 500), y = user_line(seq(from = x_min, to = x_max, length = 500))), aes(x = x, y = y, color = "User Line")) +
+          geom_smooth(method = "lm", se = FALSE, aes(color = "Least Squares Line")) +
+          geom_segment(aes(x = x_values, xend = x_values, y = true_y, yend = ls_y, color = "Least Squares Line", label = Least_Squares_Residual), linetype = "dotted", linewidth = 0.25) + 
+          labs(color = "Legend") + 
+          scale_color_manual(values = colors)
+        tooltip <- c("x", "y", "color", "label")
+        ggplotly(g, tooltip = tooltip)
+      } else if(("Show User Line Residuals" %in% input$add_to_plot) & ("Show Least Squares Line" %in% input$add_to_plot) & ("Show Least Squares Line Residuals" %in% input$add_to_plot)){
+        g <- ggplot(slr_data, aes_string(x = isolate(input$slr_x), y = isolate(input$slr_y))) +
+          geom_point(aes(label = User_Residual, label2 = Least_Squares_Residual)) +
+          geom_line(data = data.frame(x = seq(from = x_min, to = x_max, length = 500), y = user_line(seq(from = x_min, to = x_max, length = 500))), aes(x = x, y = y, color = "User Line")) +
+          geom_smooth(method = "lm", se = FALSE, aes(color = "Least Squares Line")) +
+          geom_segment(aes(x = x_values, xend = x_values, y = true_y, yend = ls_y, color = "Least Squares Line", label2 = Least_Squares_Residual), linetype = "dotted", linewidth = 0.25) + 
+          geom_segment(aes(x = x_values, xend = x_values, y = true_y, yend = user_y, color = "User Line", label = User_Residual), linetype = "dashed", linewidth = 0.25)+ 
+          labs(color = "Legend") + 
+          scale_color_manual(values = colors)
+        tooltip <- c("x", "y", "color", "label", "label2")
+        ggplotly(g, tooltip = tooltip)
+      }
         
     })
     
@@ -284,7 +335,7 @@ function(input, output, session) {
         true_y <- slr_data |>
           pull(input$slr_y)
         user_resids <- true_y - user_y
-        results <- data.frame("Line" = "User Line", "SSE" = round(sum(user_resids^2), 2), "MSE" = round(sum(user_resids^2)/(input$slr_n-2), 2), "RMSE" = round(sqrt(sum(user_resids^2)/(input$slr_n-2)), 2))
+        results <- data.frame("Line" = "User Line", "DF" = as.integer(input$slr_n-2), "SSE" = round(sum(user_resids^2), 2), "MSE" = round(sum(user_resids^2)/(input$slr_n-2), 2), "RMSE" = round(sqrt(sum(user_resids^2)/(input$slr_n-2)), 2))
         if((("Show Least Squares Line" %in% input$add_to_plot) & (input$tabset1 == "Scatter Plot with Line(s)")) | ((input$tabset1 == "Residual Plot(s)") & input$plot_slr_resid)){
           fit <- sample_slr$slr_ls
           coefs <- coef(fit)
@@ -293,17 +344,33 @@ function(input, output, session) {
             pull(input$slr_y)
           ls_resids <- true_y - ls_y
           results[2, ] <- c("Least Squares Line", 
+                            input$slr_n-2,
                             round(sum(ls_resids^2), 4), 
                             round(sum(ls_resids^2)/(input$slr_n-2), 4),
                             round(sqrt(sum(ls_resids^2)/(input$slr_n-2)), 2))
-          print(summary(fit)$sigma)
         }
         results
       }
     })
     
+    
+    #create ls output
+    output$slr_ls_info <- renderTable({
+      if(!input$slr_sample | !("Show Least Squares Line" %in% input$add_to_plot)){
+        NULL
+      } else {
+        #find the SSE for the user line
+        fit <- sample_slr$slr_ls
+        temp_df <- as.data.frame(summary(fit)$coefficients)
+        temp_df$Parameter <- c("Intercept", "Slope") 
+        temp_df |>
+          select(Parameter, everything())
+      }
+      })
+
+    
     #Create graph
-    output$slr_residual <- renderPlot({
+    output$slr_residual <- renderPlotly({
       validate(
         need(!is.null(sample_slr$slr_data), "Please select your variables, subset, and click the 'Get a Sample!' button.")
       )
@@ -323,9 +390,10 @@ function(input, output, session) {
       if(!input$plot_slr_resid){
         #create one resid plot
         resid_df <- data.frame(x = x_values, y = user_resids)
-        ggplot(resid_df, aes(x = x, y = y)) +
+        g <- ggplot(resid_df, aes(x = x, y = y)) +
           geom_point() +
           geom_segment(x = min(x_values), xend = max(x_values), y = 0, yend = 0)
+        ggplotly(g)
       } else {
         fit <- sample_slr$slr_ls
         coefs <- coef(fit)
@@ -335,10 +403,11 @@ function(input, output, session) {
         ls_resids <- true_y - ls_y
         
         resid_df <- data.frame(x = rep(x_values, 2), y = c(user_resids, ls_resids), line = factor(c(rep("User", length(x_values)), rep("Least Squares", length(x_values))), levels = c("User", "Least Squares")))
-        ggplot(resid_df, aes(x = x, y = y)) +
+        g <- ggplot(resid_df, aes(x = x, y = y)) +
           geom_point() +
           geom_segment(x = min(x_values), xend = max(x_values), y = 0, yend = 0) +
           facet_grid(~line)
+        ggplotly(g)
       }
     })
 

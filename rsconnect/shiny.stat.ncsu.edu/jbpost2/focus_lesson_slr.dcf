@@ -5,8 +5,8 @@ account: jbpost2
 server: shiny.stat.ncsu.edu
 hostUrl: https://shiny.stat.ncsu.edu/__api__
 appId: 66
-bundleId: 143
-url: https://shiny.stat.ncsu.edu/content/2722f7c2-e54a-4efe-a632-0b76f5181f22/
+bundleId: 144
+url: https://shiny.stat.ncsu.edu/jbpost2/FocusLessonSLR/
 version: 1
 asMultiple: FALSE
 asStatic: FALSE
