@@ -248,15 +248,19 @@ dashboardPage(
                       tabPanel("Residual Plot(s)", 
                                plotlyOutput("slr_residual"),
                                checkboxInput("plot_slr_resid", "Show Least Squares Line Residual Plot")
-                               )
+                               ),
+                      tabPanel("QQ Plot(s)", 
+                               plotlyOutput("slr_qq"),
+                               checkboxInput("plot_slr_qq", "Show Least Squares Residual QQ Plot")
                       )
+                    )
                     ),
                   fluidRow(
                     conditionalPanel("input.slr_sample",
                       box(
                         width = 9,
                         tableOutput("slr_info"),
-                        conditionalPanel("input.add_to_plot.includes('Show Least Squares Line')",
+                        conditionalPanel("input.add_to_plot.includes('Show Least Squares Line') || input.plot_slr_resid || input.plot_slr_qq",
                                          h4("Simple Linear Regression Fit"),
                                          tableOutput("slr_ls_info")
                                          )

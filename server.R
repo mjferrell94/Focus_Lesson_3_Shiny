@@ -216,6 +216,18 @@ function(input, output, session) {
           updateCheckboxGroupInput(session, "add_to_plot", choices = c("Show User Line Residuals", "Show Least Squares Line", "Show Least Squares Line Residuals"), selected = isolate(input$add_to_plot), inline = TRUE)
         }
       })
+    
+    observeEvent(input$tabset1, {
+      if(input$tabset1 != "Scatter Plot with Line(s)"){
+        updateCheckboxGroupInput(session, "add_to_plot", choices = c("Show User Line Residuals", "Show Least Squares Line"), inline = TRUE, selected = NULL)
+      }
+      if(input$tabset1 != "Residual Plot(s)") {
+        updateCheckboxInput(session, "plot_slr_resid", value = FALSE)
+      }
+      if(input$tabset1 != "QQ Plot(s)") {
+        updateCheckboxInput(session, "plot_slr_qq", value = FALSE)
+      }
+    })
 
     
     #Create graph
@@ -257,7 +269,9 @@ function(input, output, session) {
       slr_data$ls_y <- ls_y
       slr_data$Least_Squares_Residual <- round(ls_resids, 3)
       
+      #############
       #create full plots within if then else to get tooltip right...
+      #only the main plot
       if(!("Show User Line Residuals" %in% input$add_to_plot) & !("Show Least Squares Line" %in% input$add_to_plot)){
         #create base plot  
         g <- ggplot(slr_data, aes_string(x = isolate(input$slr_x), y = isolate(input$slr_y))) +
@@ -267,6 +281,7 @@ function(input, output, session) {
           scale_color_manual(values = colors)
         tooltip <- c("x", "y", "color")
         ggplotly(g, tooltip = tooltip)
+        ##Just the main plot and user residuals
       } else if(("Show User Line Residuals" %in% input$add_to_plot) & !("Show Least Squares Line" %in% input$add_to_plot)){
         g <- ggplot(slr_data, aes_string(x = isolate(input$slr_x), y = isolate(input$slr_y))) +
           geom_point(aes(label = User_Residual)) +
@@ -276,6 +291,7 @@ function(input, output, session) {
           scale_color_manual(values = colors)
         tooltip <- c("x", "y", "color", "label")
         ggplotly(g, tooltip = tooltip)
+        ##Just the main plot and SLR fit
       } else if(!("Show User Line Residuals" %in% input$add_to_plot) & ("Show Least Squares Line" %in% input$add_to_plot) & !("Show Least Squares Line Residuals" %in% input$add_to_plot)){
         g <- ggplot(slr_data, aes_string(x = isolate(input$slr_x), y = isolate(input$slr_y))) +
           geom_point(aes(label = User_Residual)) +
@@ -285,6 +301,7 @@ function(input, output, session) {
           scale_color_manual(values = colors)
         tooltip <- c("x", "y", "color")
         ggplotly(g, tooltip = tooltip)
+        ##User line residuals and LS line
       } else if(("Show User Line Residuals" %in% input$add_to_plot) & ("Show Least Squares Line" %in% input$add_to_plot) & !("Show Least Squares Line Residuals" %in% input$add_to_plot)){
         g <- ggplot(slr_data, aes_string(x = isolate(input$slr_x), y = isolate(input$slr_y))) +
           geom_point(aes(label = User_Residual)) +
@@ -295,6 +312,7 @@ function(input, output, session) {
           scale_color_manual(values = colors)
         tooltip <- c("x", "y", "color", "label")
         ggplotly(g, tooltip = tooltip)
+        ##main plot, LS line, and LS resids
       } else if(!("Show User Line Residuals" %in% input$add_to_plot) & ("Show Least Squares Line" %in% input$add_to_plot) & ("Show Least Squares Line Residuals" %in% input$add_to_plot)){
         g <- ggplot(slr_data, aes_string(x = isolate(input$slr_x), y = isolate(input$slr_y))) +
           geom_point(aes(label = Least_Squares_Residual)) +
@@ -305,6 +323,7 @@ function(input, output, session) {
           scale_color_manual(values = colors)
         tooltip <- c("x", "y", "color", "label")
         ggplotly(g, tooltip = tooltip)
+        ##all things!
       } else if(("Show User Line Residuals" %in% input$add_to_plot) & ("Show Least Squares Line" %in% input$add_to_plot) & ("Show Least Squares Line Residuals" %in% input$add_to_plot)){
         g <- ggplot(slr_data, aes_string(x = isolate(input$slr_x), y = isolate(input$slr_y))) +
           geom_point(aes(label = User_Residual, label2 = Least_Squares_Residual)) +
@@ -336,7 +355,7 @@ function(input, output, session) {
           pull(input$slr_y)
         user_resids <- true_y - user_y
         results <- data.frame("Line" = "User Line", "DF" = as.integer(input$slr_n-2), "SSE" = round(sum(user_resids^2), 2), "MSE" = round(sum(user_resids^2)/(input$slr_n-2), 2), "RMSE" = round(sqrt(sum(user_resids^2)/(input$slr_n-2)), 2))
-        if((("Show Least Squares Line" %in% input$add_to_plot) & (input$tabset1 == "Scatter Plot with Line(s)")) | ((input$tabset1 == "Residual Plot(s)") & input$plot_slr_resid)){
+        if((("Show Least Squares Line" %in% input$add_to_plot) & (input$tabset1 == "Scatter Plot with Line(s)")) | ((input$tabset1 == "Residual Plot(s)") & input$plot_slr_resid) | ((input$tabset1 == "QQ Plot(s)") & input$plot_slr_qq)){
           fit <- sample_slr$slr_ls
           coefs <- coef(fit)
           ls_y <- coefs[1] + coefs[2]*x_values
@@ -356,17 +375,22 @@ function(input, output, session) {
     
     #create ls output
     output$slr_ls_info <- renderTable({
-      if(!input$slr_sample | !("Show Least Squares Line" %in% input$add_to_plot)){
-        NULL
-      } else {
+      if (
+        (("Show Least Squares Line" %in% input$add_to_plot) & (input$tabset1 == "Scatter Plot with Line(s)")) | 
+        ((input$tabset1 == "Residual Plot(s)") & input$plot_slr_resid) | 
+        ((input$tabset1 == "QQ Plot(s)") & input$plot_slr_qq)
+        ){
         #find the SSE for the user line
         fit <- sample_slr$slr_ls
         temp_df <- as.data.frame(summary(fit)$coefficients)
         temp_df$Parameter <- c("Intercept", "Slope") 
         temp_df |>
           select(Parameter, everything())
+      } else {
+        NULL
       }
       })
+
 
     
     #Create graph
@@ -411,6 +435,48 @@ function(input, output, session) {
       }
     })
 
+    
+    #Create graph
+    output$slr_qq <- renderPlotly({
+      validate(
+        need(!is.null(sample_slr$slr_data), "Please select your variables, subset, and click the 'Get a Sample!' button.")
+      )
+      #data and user values for line
+      slr_data <- sample_slr$slr_data
+      user_line <- function(x){
+        input$slr_int + input$slr_slope * x
+      }
+      #values for plotting purposes
+      x_values <- slr_data |> 
+        pull(input$slr_x)
+      user_y <- user_line(x_values)
+      true_y <- slr_data |>
+        pull(input$slr_y)
+      user_resids <- true_y - user_y
+      
+      if(!input$plot_slr_qq){
+        #create one resid plot
+        resid_df <- data.frame(x = x_values, y = user_resids)
+        g <- ggplot(resid_df, aes(sample = y)) +
+          stat_qq() +
+          stat_qq_line()
+        ggplotly(g)
+      } else {
+        fit <- sample_slr$slr_ls
+        coefs <- coef(fit)
+        ls_y <- coefs[1] + coefs[2]*x_values
+        true_y <- slr_data |>
+          pull(input$slr_y)
+        ls_resids <- true_y - ls_y
+        
+        resid_df <- data.frame(x = rep(x_values, 2), y = c(user_resids, ls_resids), line = factor(c(rep("User", length(x_values)), rep("Least Squares", length(x_values))), levels = c("User", "Least Squares")))
+        g <- ggplot(resid_df, aes(sample = y)) +
+          stat_qq() +
+          stat_qq_line() +
+          facet_grid(~line)
+        ggplotly(g)
+      }
+    })
 #################################################3
 ##Group SLR Stuff
 sample_group <- reactiveValues(group_data = NULL, group_ls = NULL)
