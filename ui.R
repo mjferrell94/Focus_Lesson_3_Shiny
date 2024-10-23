@@ -224,7 +224,8 @@ dashboardPage(
                                   "Intercept",
                                   min = -50,
                                   max = 50,
-                                  value = 0)
+                                  value = 0,
+                                  ticks = FALSE)
                     ),
                     box(
                       width = 6,
@@ -232,7 +233,8 @@ dashboardPage(
                                   "Slope",
                                   min = -50,
                                   max = 50,
-                                  value = 0)
+                                  value = 0,
+                                  ticks = FALSE)
                     )
                   ),
                   fluidRow(

@@ -31,6 +31,19 @@ function(input, output, session) {
                            "corr_y",
                            choices = choices)
     }
+    if (((input$corr_x == "GRPIP") & (input$corr_y %in% c("TAXAMT", "VALP"))) | ((input$corr_y == "GRPIP") & (input$corr_x %in% c("TAXAMT", "VALP")))){
+      shinyalert(title = "Oh no!", "Those with Property taxes and/or Property Values usually don't have a rent payment. Please select a different combination of variables.", type = "error")
+      updateSelectizeInput(session,
+                           "corr_x",
+                           choices = choices[-2],
+                           selected = choices[1]
+      )
+      updateSelectizeInput(session,
+                           "corr_y",
+                           choices = choices[-1],
+                           selected = choices[2]
+      )
+    }
   })
   
   #make sure two variables are selected
@@ -130,7 +143,7 @@ function(input, output, session) {
     
 ########################################################3
 ##SLR stuff
-    sample_slr <- reactiveValues(slr_data = NULL, slr_ls = NULL, slr_user = NULL)
+    sample_slr <- reactiveValues(slr_data = NULL, slr_ls = NULL, slr_user = NULL, variable_issue = FALSE)
 
     #update input boxes so they can't choose the same variable
     observeEvent(c(input$slr_x, input$slr_y), {
@@ -143,64 +156,120 @@ function(input, output, session) {
                              "slr_y",
                              choices = choices)
       }
+      if (((input$slr_x == "GRPIP") & (input$slr_y %in% c("TAXAMT", "VALP"))) | ((input$slr_y == "GRPIP") & (input$slr_x %in% c("TAXAMT", "VALP")))){
+        shinyalert(title = "Oh no!", "Those with Property taxes and/or Property Values usually don't have a rent payment. Please select a different combination of variables.", type = "error")
+        updateSelectizeInput(session,
+                             "slr_x",
+                             choices = choices[-2],
+                             selected = choices[1]
+                              )
+        updateSelectizeInput(session,
+                             "slr_y",
+                             choices = choices[-1],
+                             selected = choices[2]
+        )
+      }
     })
     
     #make sure two variables are selected
     observeEvent(input$slr_sample, {
-      
-      if(input$hhl_slr == "all"){
-        hhl_sub <- HHLvals
-      } else if(input$hhl_slr == "english"){
-        hhl_sub <- HHLvals["1"]
-      } else if(input$hhl_slr == "spanish"){
-        hhl_sub <- HHLvals["2"]
-      } else {
-        hhl_sub <- HHLvals[c("0", "3", "4", "5")]
-      }
-      
-      if(input$fs_slr == "all"){
-        fs_sub <- FSvals
-      } else if(input$fs_slr == "yes"){
-        fs_sub <- FSvals["1"]
-      } else {
-        fs_sub <- FSvals["2"]
-      }
-      
-      if(input$schl_slr == "all"){
-        schl_sub <- SCHLvals
-      } else if(input$schl_slr == "no_hs"){
-        schl_sub <- SCHLvals[as.character(0:15)]
-      } else if(input$schl_slr == "hs"){
-        schl_sub <- SCHLvals[as.character(16:19)]
-      } else {
-        schl_sub <- SCHLvals[as.character(20:24)]
-      }
-      
-      slr_vars <- c(input$slr_x, input$slr_y)
-      
-      subsetted_data <- my_sample |>
-        filter(#cat vars first
-          HHLfac %in% hhl_sub,
-          FSfac %in% fs_sub,
-          SCHLfac %in% schl_sub
-        ) %>% #make sure numeric variables are in appropriate range, must use %>% here for {} to work
-        {if("WKHP" %in% slr_vars) filter(., WKHP > 0) else .} %>%
-        {if("VALP" %in% slr_vars) filter(., !is.na(VALP)) else .} %>%
-        {if("TAXAMT" %in% slr_vars) filter(., !is.na(TAXAMT)) else .} %>%
-        {if("GRPIP" %in% slr_vars) filter(., GRPIP > 0) else .} %>%
-        {if("GASP" %in% slr_vars) filter(., GASP > 0) else .} %>%
-        {if("ELEP" %in% slr_vars) filter(., ELEP > 0) else .} %>%
-        {if("WATP" %in% slr_vars) filter(., WATP > 0) else .} %>%
-        {if("PINCP" %in% slr_vars) filter(., AGEP > 18) else .} %>%
-        {if("JWMNP" %in% slr_vars) filter(., !is.na(JWMNP)) else .} 
-      
-      index <- sample(1:nrow(subsetted_data), 
-                      size = input$slr_n, 
-                      replace = TRUE, 
-                      prob = subsetted_data$PWGTP/sum(subsetted_data$PWGTP))
-      sample_slr$slr_data <- subsetted_data[index, ]
-      sample_slr$slr_ls <- lm(get(input$slr_y) ~ get(input$slr_x), data = sample_slr$slr_data)
+
+        if(input$hhl_slr == "all"){
+          hhl_sub <- HHLvals
+        } else if(input$hhl_slr == "english"){
+          hhl_sub <- HHLvals["1"]
+        } else if(input$hhl_slr == "spanish"){
+          hhl_sub <- HHLvals["2"]
+        } else {
+          hhl_sub <- HHLvals[c("0", "3", "4", "5")]
+        }
+        
+        if(input$fs_slr == "all"){
+          fs_sub <- FSvals
+        } else if(input$fs_slr == "yes"){
+          fs_sub <- FSvals["1"]
+        } else {
+          fs_sub <- FSvals["2"]
+        }
+        
+        if(input$schl_slr == "all"){
+          schl_sub <- SCHLvals
+        } else if(input$schl_slr == "no_hs"){
+          schl_sub <- SCHLvals[as.character(0:15)]
+        } else if(input$schl_slr == "hs"){
+          schl_sub <- SCHLvals[as.character(16:19)]
+        } else {
+          schl_sub <- SCHLvals[as.character(20:24)]
+        }
+        
+        slr_vars <- c(input$slr_x, input$slr_y)
+        
+        subsetted_data <- my_sample |>
+          filter(#cat vars first
+            HHLfac %in% hhl_sub,
+            FSfac %in% fs_sub,
+            SCHLfac %in% schl_sub
+          ) %>% #make sure numeric variables are in appropriate range, must use %>% here for {} to work
+          {if("WKHP" %in% slr_vars) filter(., WKHP > 0) else .} %>%
+          {if("VALP" %in% slr_vars) filter(., !is.na(VALP)) else .} %>%
+          {if("TAXAMT" %in% slr_vars) filter(., !is.na(TAXAMT)) else .} %>%
+          {if("GRPIP" %in% slr_vars) filter(., GRPIP > 0) else .} %>%
+          {if("GASP" %in% slr_vars) filter(., GASP > 0) else .} %>%
+          {if("ELEP" %in% slr_vars) filter(., ELEP > 0) else .} %>%
+          {if("WATP" %in% slr_vars) filter(., WATP > 0) else .} %>%
+          {if("PINCP" %in% slr_vars) filter(., AGEP > 18) else .} %>%
+          {if("JWMNP" %in% slr_vars) filter(., !is.na(JWMNP)) else .} 
+        
+        index <- sample(1:nrow(subsetted_data), 
+                        size = input$slr_n, 
+                        replace = TRUE, 
+                        prob = subsetted_data$PWGTP/sum(subsetted_data$PWGTP))
+        sample_slr$slr_data <- subsetted_data[index, ]
+        sample_slr$slr_ls <- lm(get(input$slr_y) ~ get(input$slr_x), data = sample_slr$slr_data)
     })
+    
+    #update the user slider for the intercept
+    observeEvent(input$slr_sample, {
+      #grab data
+      slr_data <- sample_slr$slr_data
+      #grab the fit and summaries needed
+      fit <- sample_slr$slr_ls
+      coefs <- coef(fit)
+      sigma <- summary(fit)$sigma
+      #grab x-values to find max y-hat
+      x_values <- slr_data |> 
+        pull(input$slr_x)
+      #find the y-intercept value to compare +/- 3 SE of line
+      int_low <- coefs[1]-3*sigma
+      int_high <- coefs[1]+3*sigma
+      #find the max y-hat value and min y-hat value
+      end_low <- min(coefs[1] + coefs[2]*x_values) -3*sigma
+      end_high <- max(coefs[1] + coefs[2]*x_values) +3*sigma
+      #set min and max for ease below
+      min <- floor(min(int_low, end_low))
+      max <- ceiling(max(int_high, end_high))
+      updateSliderInput(session, 
+                        "slr_int", 
+                        min = min, 
+                        max = max, 
+                        value = round(slr_data |> 
+                                        pull(input$slr_y) |>
+                                        mean()),
+                        step = (max-min)/1000)
+      slope_min <- (ceiling(max(int_high, end_high))- floor(min(int_low, end_low)))/(min(x_values)-max(x_values))
+      if(abs(slope_min) < 1) {
+        slope_min <- signif(slope_min, 3)
+      } else{
+        slope_min <- ceiling(slope_min)
+      }
+      slope_max <- -slope_min
+      updateSliderInput(session,
+                        "slr_slope",
+                        min = slope_min,
+                        max = slope_max,
+                        value = 0,
+                        step = (slope_max-slope_min)/1000)
+      })
     
     #create all the residuals and find the SSE/MSE for both lines
     observeEvent(c(input$slr_sample, input$slr_int, input$slr_slope), {
@@ -229,7 +298,6 @@ function(input, output, session) {
       }
     })
 
-    
     #Create graph
     output$slr_scatter <- renderPlotly({
       validate(
@@ -243,7 +311,7 @@ function(input, output, session) {
       colors <- c("User Line" = "green", "Least Squares Line" = "blue")
       #values for plotting purposes
       x_values <- slr_data |> 
-        pull(input$slr_x)
+        pull(isolate(input$slr_x))
       x_min <- min(x_values)
       x_max <- max(x_values)
       y_min <- min(c(user_line(x_min), user_line(x_max)))
@@ -254,7 +322,7 @@ function(input, output, session) {
       #user stuff
       user_y <- user_line(x_values)
       true_y <- slr_data |>
-        pull(input$slr_y)
+        pull(isolate(input$slr_y))
       user_resids <- true_y - user_y
       
       slr_data$User_Residual <- user_resids
@@ -274,63 +342,143 @@ function(input, output, session) {
       #only the main plot
       if(!("Show User Line Residuals" %in% input$add_to_plot) & !("Show Least Squares Line" %in% input$add_to_plot)){
         #create base plot  
-        g <- ggplot(slr_data, aes_string(x = isolate(input$slr_x), y = isolate(input$slr_y))) +
+        g <- ggplot(slr_data, 
+                    aes_string(x = isolate(input$slr_x), 
+                               y = isolate(input$slr_y))) +
           geom_point() +
-          geom_line(data = data.frame(x = seq(from = x_min, to = x_max, length = 500), y = user_line(seq(from = x_min, to = x_max, length = 500))), aes(x = x, y = y, color = "User Line")) + 
+          geom_line(data = data.frame(x = seq(from = x_min, to = x_max, length = 500), 
+                                      y = user_line(seq(from = x_min, to = x_max, length = 500))), 
+                    aes(x = x, 
+                        y = y, 
+                        color = "User Line")) + 
           labs(color = "Legend") + 
           scale_color_manual(values = colors)
         tooltip <- c("x", "y", "color")
         ggplotly(g, tooltip = tooltip)
         ##Just the main plot and user residuals
       } else if(("Show User Line Residuals" %in% input$add_to_plot) & !("Show Least Squares Line" %in% input$add_to_plot)){
-        g <- ggplot(slr_data, aes_string(x = isolate(input$slr_x), y = isolate(input$slr_y))) +
+        g <- ggplot(slr_data, 
+                    aes_string(x = isolate(input$slr_x), 
+                               y = isolate(input$slr_y))) +
           geom_point(aes(label = User_Residual)) +
-          geom_line(data = data.frame(x = seq(from = x_min, to = x_max, length = 500), y = user_line(seq(from = x_min, to = x_max, length = 500))), aes(x = x, y = y, color = "User Line")) +
-          geom_segment(aes(x = x_values, xend = x_values, y = true_y, yend = user_y, color = "User Line", label = User_Residual), linetype = "dashed", linewidth = 0.25)+ 
+          geom_line(data = data.frame(x = seq(from = x_min, to = x_max, length = 500), 
+                                      y = user_line(seq(from = x_min, to = x_max, length = 500))), 
+                    aes(x = x, 
+                        y = y, 
+                        color = "User Line")) +
+          geom_segment(aes(x = x_values, 
+                           xend = x_values, 
+                           y = true_y, 
+                           yend = user_y, 
+                           color = "User Line", 
+                           label = User_Residual), 
+                       linetype = "dashed", 
+                       linewidth = 0.25)+ 
           labs(color = "Legend") + 
           scale_color_manual(values = colors)
         tooltip <- c("x", "y", "color", "label")
         ggplotly(g, tooltip = tooltip)
         ##Just the main plot and SLR fit
       } else if(!("Show User Line Residuals" %in% input$add_to_plot) & ("Show Least Squares Line" %in% input$add_to_plot) & !("Show Least Squares Line Residuals" %in% input$add_to_plot)){
-        g <- ggplot(slr_data, aes_string(x = isolate(input$slr_x), y = isolate(input$slr_y))) +
+        g <- ggplot(slr_data, 
+                    aes_string(x = isolate(input$slr_x), 
+                               y = isolate(input$slr_y))) +
           geom_point(aes(label = User_Residual)) +
-          geom_line(data = data.frame(x = seq(from = x_min, to = x_max, length = 500), y = user_line(seq(from = x_min, to = x_max, length = 500))), aes(x = x, y = y, color = "User Line")) +
-          geom_smooth(method = "lm", se = FALSE, aes(color = "Least Squares Line"))
+          geom_line(data = data.frame(x = seq(from = x_min, to = x_max, length = 500), 
+                                      y = user_line(seq(from = x_min, to = x_max, length = 500))), 
+                    aes(x = x, 
+                        y = y, 
+                        color = "User Line")) +
+          geom_smooth(method = "lm", 
+                      se = FALSE, 
+                      aes(color = "Least Squares Line")) +
           labs(color = "Legend") + 
           scale_color_manual(values = colors)
         tooltip <- c("x", "y", "color")
         ggplotly(g, tooltip = tooltip)
         ##User line residuals and LS line
       } else if(("Show User Line Residuals" %in% input$add_to_plot) & ("Show Least Squares Line" %in% input$add_to_plot) & !("Show Least Squares Line Residuals" %in% input$add_to_plot)){
-        g <- ggplot(slr_data, aes_string(x = isolate(input$slr_x), y = isolate(input$slr_y))) +
+        g <- ggplot(slr_data, 
+                    aes_string(x = isolate(input$slr_x), 
+                               y = isolate(input$slr_y))) +
           geom_point(aes(label = User_Residual)) +
-          geom_line(data = data.frame(x = seq(from = x_min, to = x_max, length = 500), y = user_line(seq(from = x_min, to = x_max, length = 500))), aes(x = x, y = y, color = "User Line")) +
-          geom_smooth(method = "lm", se = FALSE, aes(color = "Least Squares Line")) +
-          geom_segment(aes(x = x_values, xend = x_values, y = true_y, yend = user_y, color = "User Line", label = User_Residual), linetype = "dashed", linewidth = 0.25)+ 
+          geom_line(data = data.frame(x = seq(from = x_min, to = x_max, length = 500), 
+                                      y = user_line(seq(from = x_min, to = x_max, length = 500))), 
+                    aes(x = x, 
+                        y = y, 
+                        color = "User Line")) +
+          geom_smooth(method = "lm", 
+                      se = FALSE, 
+                      aes(color = "Least Squares Line")) +
+          geom_segment(aes(x = x_values, 
+                           xend = x_values, 
+                           y = true_y, 
+                           yend = user_y, 
+                           color = "User Line", 
+                           label = User_Residual), 
+                       linetype = "dashed", 
+                       linewidth = 0.25)+ 
         labs(color = "Legend") + 
           scale_color_manual(values = colors)
         tooltip <- c("x", "y", "color", "label")
         ggplotly(g, tooltip = tooltip)
         ##main plot, LS line, and LS resids
       } else if(!("Show User Line Residuals" %in% input$add_to_plot) & ("Show Least Squares Line" %in% input$add_to_plot) & ("Show Least Squares Line Residuals" %in% input$add_to_plot)){
-        g <- ggplot(slr_data, aes_string(x = isolate(input$slr_x), y = isolate(input$slr_y))) +
+        g <- ggplot(slr_data, 
+                    aes_string(x = isolate(input$slr_x), 
+                               y = isolate(input$slr_y))) +
           geom_point(aes(label = Least_Squares_Residual)) +
-          geom_line(data = data.frame(x = seq(from = x_min, to = x_max, length = 500), y = user_line(seq(from = x_min, to = x_max, length = 500))), aes(x = x, y = y, color = "User Line")) +
-          geom_smooth(method = "lm", se = FALSE, aes(color = "Least Squares Line")) +
-          geom_segment(aes(x = x_values, xend = x_values, y = true_y, yend = ls_y, color = "Least Squares Line", label = Least_Squares_Residual), linetype = "dotted", linewidth = 0.25) + 
+          geom_line(data = data.frame(x = seq(from = x_min, to = x_max, length = 500), 
+                                      y = user_line(seq(from = x_min, to = x_max, length = 500))), 
+                    aes(x = x, 
+                        y = y, 
+                        color = "User Line")) +
+          geom_smooth(method = "lm", 
+                      se = FALSE, 
+                      aes(color = "Least Squares Line")) +
+          geom_segment(aes(x = x_values, 
+                           xend = x_values, 
+                           y = true_y, 
+                           yend = ls_y, 
+                           color = "Least Squares Line", 
+                           label = Least_Squares_Residual), 
+                       linetype = "dotted", 
+                       linewidth = 0.25) + 
           labs(color = "Legend") + 
           scale_color_manual(values = colors)
         tooltip <- c("x", "y", "color", "label")
         ggplotly(g, tooltip = tooltip)
         ##all things!
       } else if(("Show User Line Residuals" %in% input$add_to_plot) & ("Show Least Squares Line" %in% input$add_to_plot) & ("Show Least Squares Line Residuals" %in% input$add_to_plot)){
-        g <- ggplot(slr_data, aes_string(x = isolate(input$slr_x), y = isolate(input$slr_y))) +
-          geom_point(aes(label = User_Residual, label2 = Least_Squares_Residual)) +
-          geom_line(data = data.frame(x = seq(from = x_min, to = x_max, length = 500), y = user_line(seq(from = x_min, to = x_max, length = 500))), aes(x = x, y = y, color = "User Line")) +
-          geom_smooth(method = "lm", se = FALSE, aes(color = "Least Squares Line")) +
-          geom_segment(aes(x = x_values, xend = x_values, y = true_y, yend = ls_y, color = "Least Squares Line", label2 = Least_Squares_Residual), linetype = "dotted", linewidth = 0.25) + 
-          geom_segment(aes(x = x_values, xend = x_values, y = true_y, yend = user_y, color = "User Line", label = User_Residual), linetype = "dashed", linewidth = 0.25)+ 
+        g <- ggplot(slr_data, 
+                    aes_string(x = isolate(input$slr_x), 
+                               y = isolate(input$slr_y))) +
+          geom_point(aes(label = User_Residual, 
+                         label2 = Least_Squares_Residual)) +
+          geom_line(data = data.frame(x = seq(from = x_min, to = x_max, length = 500), 
+                                      y = user_line(seq(from = x_min, to = x_max, length = 500))), 
+                    aes(x = x, 
+                        y = y, 
+                        color = "User Line")) +
+          geom_smooth(method = "lm", 
+                      se = FALSE, 
+                      aes(color = "Least Squares Line")) +
+          geom_segment(aes(x = x_values, 
+                           xend = x_values,
+                           y = true_y,
+                           yend = ls_y, 
+                           color = "Least Squares Line", 
+                           label2 = Least_Squares_Residual), 
+                       linetype = "dotted", 
+                       linewidth = 0.25) + 
+          geom_segment(aes(x = x_values, 
+                           xend = x_values, 
+                           y = true_y, 
+                           yend = user_y, 
+                           color = "User Line", 
+                           label = User_Residual), 
+                       linetype = "dashed", 
+                       linewidth = 0.25)+ 
           labs(color = "Legend") + 
           scale_color_manual(values = colors)
         tooltip <- c("x", "y", "color", "label", "label2")
@@ -349,24 +497,24 @@ function(input, output, session) {
           input$slr_int + input$slr_slope * x
         }
         x_values <- slr_data |> 
-          pull(input$slr_x)
+          pull(isolate(input$slr_x))
         user_y <- user_line(x_values)
         true_y <- slr_data |>
-          pull(input$slr_y)
+          pull(isolate(input$slr_y))
         user_resids <- true_y - user_y
-        results <- data.frame("Line" = "User Line", "DF" = as.integer(input$slr_n-2), "SSE" = round(sum(user_resids^2), 2), "MSE" = round(sum(user_resids^2)/(input$slr_n-2), 2), "RMSE" = round(sqrt(sum(user_resids^2)/(input$slr_n-2)), 2))
+        results <- data.frame("Line" = "User Line", "DF" = as.integer(isolate(input$slr_n)-2), "SSE" = round(sum(user_resids^2), 2), "MSE" = round(sum(user_resids^2)/(isolate(input$slr_n)-2), 2), "RMSE" = round(sqrt(sum(user_resids^2)/(isolate(input$slr_n)-2)), 2))
         if((("Show Least Squares Line" %in% input$add_to_plot) & (input$tabset1 == "Scatter Plot with Line(s)")) | ((input$tabset1 == "Residual Plot(s)") & input$plot_slr_resid) | ((input$tabset1 == "QQ Plot(s)") & input$plot_slr_qq)){
           fit <- sample_slr$slr_ls
           coefs <- coef(fit)
           ls_y <- coefs[1] + coefs[2]*x_values
           true_y <- slr_data |>
-            pull(input$slr_y)
+            pull(isolate(input$slr_y))
           ls_resids <- true_y - ls_y
           results[2, ] <- c("Least Squares Line", 
-                            input$slr_n-2,
+                            isolate(input$slr_n)-2,
                             round(sum(ls_resids^2), 4), 
-                            round(sum(ls_resids^2)/(input$slr_n-2), 4),
-                            round(sqrt(sum(ls_resids^2)/(input$slr_n-2)), 2))
+                            round(sum(ls_resids^2)/(isolate(input$slr_n)-2), 4),
+                            round(sqrt(sum(ls_resids^2)/(isolate(input$slr_n)-2)), 2))
         }
         results
       }
@@ -405,10 +553,10 @@ function(input, output, session) {
       }
       #values for plotting purposes
       x_values <- slr_data |> 
-        pull(input$slr_x)
+        pull(isolate(input$slr_x))
       user_y <- user_line(x_values)
       true_y <- slr_data |>
-        pull(input$slr_y)
+        pull(isolate(input$slr_y))
       user_resids <- true_y - user_y
       
       if(!input$plot_slr_resid){
@@ -423,7 +571,7 @@ function(input, output, session) {
         coefs <- coef(fit)
         ls_y <- coefs[1] + coefs[2]*x_values
         true_y <- slr_data |>
-          pull(input$slr_y)
+          pull(isolate(input$slr_y))
         ls_resids <- true_y - ls_y
         
         resid_df <- data.frame(x = rep(x_values, 2), y = c(user_resids, ls_resids), line = factor(c(rep("User", length(x_values)), rep("Least Squares", length(x_values))), levels = c("User", "Least Squares")))
@@ -448,10 +596,10 @@ function(input, output, session) {
       }
       #values for plotting purposes
       x_values <- slr_data |> 
-        pull(input$slr_x)
+        pull(isolate(input$slr_x))
       user_y <- user_line(x_values)
       true_y <- slr_data |>
-        pull(input$slr_y)
+        pull(isolate(input$slr_y))
       user_resids <- true_y - user_y
       
       if(!input$plot_slr_qq){
@@ -466,7 +614,7 @@ function(input, output, session) {
         coefs <- coef(fit)
         ls_y <- coefs[1] + coefs[2]*x_values
         true_y <- slr_data |>
-          pull(input$slr_y)
+          pull(isolate(input$slr_y))
         ls_resids <- true_y - ls_y
         
         resid_df <- data.frame(x = rep(x_values, 2), y = c(user_resids, ls_resids), line = factor(c(rep("User", length(x_values)), rep("Least Squares", length(x_values))), levels = c("User", "Least Squares")))
