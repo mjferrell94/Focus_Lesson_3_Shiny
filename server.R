@@ -70,7 +70,9 @@ function(input, output, session) {
     if(input$schl_corr == "all"){
       schl_sub <- SCHLvals
     } else if(input$schl_corr == "no_hs"){
-      schl_sub <- SCHLvals[as.character(0:15)]
+      schl_sub <- SCHLvals[c("0", "01", "02", "03", "04", 
+                             "05", "06", "07", "08", "09",
+                             "10", "11", "12", "13", "14", "15")]
     } else if(input$schl_corr == "hs"){
       schl_sub <- SCHLvals[as.character(16:19)]
     } else {
@@ -195,7 +197,9 @@ function(input, output, session) {
         if(input$schl_slr == "all"){
           schl_sub <- SCHLvals
         } else if(input$schl_slr == "no_hs"){
-          schl_sub <- SCHLvals[as.character(0:15)]
+          schl_sub <- SCHLvals[c("0", "01", "02", "03", "04", 
+                                 "05", "06", "07", "08", "09",
+                                 "10", "11", "12", "13", "14", "15")]
         } else if(input$schl_slr == "hs"){
           schl_sub <- SCHLvals[as.character(16:19)]
         } else {
