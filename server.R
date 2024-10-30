@@ -679,27 +679,22 @@ observeEvent(input$group_sample, {
     
   })
 
-observeEvent(input$groups_comp, {
+output$group_scatter <- renderPlot({
   validate(
-    need(!is.null(input$groups_comp), "Please select a group, then click the 'Get a Sample!' button.")
+    need(!is.null(input$groups_comp) , "Please select a group"),
+    need(!is.null(sample_group$group_data), "Please click the 'Get a Sample!' button")
   ) #### Trying to have message show up before plot is made, having trouble here
   
   if(input$groups_comp=="snap"){
-    output$group_scatter <- renderPlot({
-      validate(
-        need(!is.null(sample_group$group_data), "Please select your variables and click the 'Get a Sample!' button.")
-      )
       #data and user values for line
       group_data <- sample_group$group_data %>% group_by(FSfac)
-      print(colnames(group_data))
-      
+      print(head(group_data))
       #values for plotting purposes
       x_values <- group_data |> 
         pull(input$group_x)
       x_min <- min(x_values)
       x_max <- max(x_values)
       
-      print(colnames(sample_group$group_data))
       
       ####Having trouble getting multiple lines with different colors with aes_string
       g <- ggplot(sample_group$group_data, aes_string(x = isolate(input$group_x), y = isolate(input$group_y))) +
@@ -709,13 +704,8 @@ observeEvent(input$groups_comp, {
       g
       
       
-    })
-  }
+    }
   if (input$groups_comp=="college"){
-    output$group_scatter <- renderPlot({
-      validate(
-        need(!is.null(sample_group$group_data), "Please select your variables and click the 'Get a Sample!' button.")
-      )
       #data and user values for line
       group_data <- sample_group$group_data %>% group_by(SCHLfac)
       
@@ -733,13 +723,8 @@ observeEvent(input$groups_comp, {
       g
       
       
-    })
-  }
+    }
   if (input$groups_comp=="lang"){
-    output$group_scatter <- renderPlot({
-      validate(
-        need(!is.null(sample_group$group_data), "Please select your variables and click the 'Get a Sample!' button.")
-      )
       #data and user values for line
       group_data <- sample_group$group_data %>% group_by(HHLfac)
       
@@ -756,8 +741,6 @@ observeEvent(input$groups_comp, {
       
       g
       
-      
-    })
   }
 })
 

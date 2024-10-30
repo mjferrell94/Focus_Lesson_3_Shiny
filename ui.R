@@ -305,6 +305,7 @@ dashboardPage(
                 mainPanel(
                   fluidRow(
                     plotOutput("group_scatter")
+                    
                   )
                 )
               )
