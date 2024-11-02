@@ -644,7 +644,21 @@ observeEvent(c(input$group_x, input$group_y), {
                          "group_y",
                          choices = choices)
   }
+  if (((input$group_x == "GRPIP") & (input$group_y %in% c("TAXAMT", "VALP"))) | ((input$group_y == "GRPIP") & (input$group_x %in% c("TAXAMT", "VALP")))){
+    shinyalert(title = "Oh no!", "Those with Property taxes and/or Property Values usually don't have a rent payment. Please select a different combination of variables.", type = "error")
+    updateSelectizeInput(session,
+                         "group_x",
+                         choices = choices[-2],
+                         selected = choices[1]
+    )
+    updateSelectizeInput(session,
+                         "group_y",
+                         choices = choices[-1],
+                         selected = choices[2]
+    )
+  }
 })
+
 
 #make sure two variables are selected 
 observeEvent(input$group_sample, {
@@ -688,7 +702,7 @@ output$group_scatter <- renderPlot({
   if(input$groups_comp=="snap"){
       #data and user values for line
       group_data <- sample_group$group_data %>% group_by(FSfac)
-      print(head(group_data))
+      
       #values for plotting purposes
       x_values <- group_data |> 
         pull(input$group_x)
@@ -696,7 +710,7 @@ output$group_scatter <- renderPlot({
       x_max <- max(x_values)
       
       
-      ####Having trouble getting multiple lines with different colors with aes_string
+      ####Having trouble getting multiple lines with different colors with aes_string. Also, the graph is showing as empty!!!
       g <- ggplot(sample_group$group_data, aes_string(x = isolate(input$group_x), y = isolate(input$group_y))) +
         geom_point() +
         geom_smooth(method = "lm", se = FALSE)
@@ -705,9 +719,10 @@ output$group_scatter <- renderPlot({
       
       
     }
-  if (input$groups_comp=="college"){
+  if (input$groups_comp=="school"){
       #data and user values for line
       group_data <- sample_group$group_data %>% group_by(SCHLfac)
+      
       
       #values for plotting purposes
       x_values <- group_data |> 
@@ -715,6 +730,10 @@ output$group_scatter <- renderPlot({
       x_min <- min(x_values)
       x_max <- max(x_values)
       
+      print(x_values)
+      print(input$group_x)
+      print(input$group_y)
+      print(sample_group$group_data)
       ####Having trouble getting multiple lines with different colors with aes_string
       g <- ggplot(sample_group$group_data, aes_string(x = isolate(input$group_x), y = isolate(input$group_y))) +
         geom_point() +
