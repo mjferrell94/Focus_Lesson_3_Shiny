@@ -16,7 +16,7 @@ my_sample <- readRDS("my_sample_temp.rds")
 function(input, output, session) {
   
   
-#################################################3
+#################################################
 ##Correlation tab
   sample_corr <- reactiveValues(corr_data = NULL, corr_truth = NULL)
   
@@ -143,7 +143,7 @@ function(input, output, session) {
   })
 
     
-########################################################3
+########################################################
 ##SLR stuff
     sample_slr <- reactiveValues(slr_data = NULL, slr_ls = NULL, slr_user = NULL, variable_issue = FALSE)
 
@@ -629,139 +629,137 @@ function(input, output, session) {
         ggplotly(g)
       }
     })
-#################################################3
+    
+#################################################
 ##Group SLR Stuff
-sample_group <- reactiveValues(group_data = NULL, group_ls = NULL)
-
-#update input boxes so they can't choose the same variable
-observeEvent(c(input$group_x, input$group_y), {
-  group_x <- input$group_x
-  group_y <- input$group_y
-  choices <- numeric_vars
-  if (group_x == group_y){
-    choices <- choices[-which(choices == group_x)]
-    updateSelectizeInput(session,
-                         "group_y",
-                         choices = choices)
-  }
-  if (((input$group_x == "GRPIP") & (input$group_y %in% c("TAXAMT", "VALP"))) | ((input$group_y == "GRPIP") & (input$group_x %in% c("TAXAMT", "VALP")))){
-    shinyalert(title = "Oh no!", "Those with Property taxes and/or Property Values usually don't have a rent payment. Please select a different combination of variables.", type = "error")
-    updateSelectizeInput(session,
-                         "group_x",
-                         choices = choices[-2],
-                         selected = choices[1]
-    )
-    updateSelectizeInput(session,
-                         "group_y",
-                         choices = choices[-1],
-                         selected = choices[2]
-    )
-  }
-})
-
-
-#make sure two variables are selected 
-observeEvent(input$group_sample, {
+  sample_group <- reactiveValues(group_data = NULL, group_ls = NULL)
   
-  group_vars <- c(input$group_x, input$group_y)
-  
-  subsetted_data <- my_sample |>
-    mutate(SCHLfac = ifelse(SCHLfac %in% SCHLvals[as.character(20:24)],"College","No College")) |>
-    filter(#cat vars first
-      HHLfac %in% c("English Only","Spanish"),
-      FSfac %in% c("Yes","No")
-    ) %>% #make sure numeric variables are in appropriate range, must use %>% here for {} to work
-    {if("WKHP" %in% group_vars) filter(., WKHP > 0) else .} %>%
-    {if("VALP" %in% group_vars) filter(., !is.na(VALP)) else .} %>%
-    {if("TAXAMT" %in% group_vars) filter(., !is.na(TAXAMT)) else .} %>%
-    {if("GRPIP" %in% group_vars) filter(., GRPIP > 0) else .} %>%
-    {if("GASP" %in% group_vars) filter(., GASP > 0) else .} %>%
-    {if("ELEP" %in% group_vars) filter(., ELEP > 0) else .} %>%
-    {if("WATP" %in% group_vars) filter(., WATP > 0) else .} %>%
-    {if("PINCP" %in% group_vars) filter(., AGEP > 18) else .} %>%
-    {if("JWMNP" %in% group_vars) filter(., !is.na(JWMNP)) else .} 
-    
-    
-  
-  index <- sample(1:nrow(subsetted_data), 
-                  size = input$group_n, 
-                  replace = TRUE, 
-                  prob = subsetted_data$PWGTP/sum(subsetted_data$PWGTP))
-  sample_group$group_data <- subsetted_data[index, ]
-  sample_group$group_ls <- lm(get(input$group_y) ~ get(input$group_x), data = sample_group$group_data)
-
-    
+  #update input boxes so they can't choose the same variable
+  observeEvent(c(input$group_x, input$group_y), {
+    group_x <- input$group_x
+    group_y <- input$group_y
+    choices <- numeric_vars
+    if (group_x == group_y){
+      choices <- choices[-which(choices == group_x)]
+      updateSelectizeInput(session,
+                           "group_y",
+                           choices = choices)
+    }
+    if (((input$group_x == "GRPIP") & (input$group_y %in% c("TAXAMT", "VALP"))) | ((input$group_y == "GRPIP") & (input$group_x %in% c("TAXAMT", "VALP")))){
+      shinyalert(title = "Oh no!", "Those with Property taxes and/or Property Values usually don't have a rent payment. Please select a different combination of variables.", type = "error")
+      updateSelectizeInput(session,
+                           "group_x",
+                           choices = choices[-2],
+                           selected = choices[1]
+      )
+      updateSelectizeInput(session,
+                           "group_y",
+                           choices = choices[-1],
+                           selected = choices[2]
+      )
+    }
   })
-
-output$group_scatter <- renderPlot({
-  validate(
-    need(!is.null(input$groups_comp) , "Please select a group"),
-    need(!is.null(sample_group$group_data), "Please click the 'Get a Sample!' button")
-  ) #### Trying to have message show up before plot is made, having trouble here
   
-  if(input$groups_comp=="snap"){
-      #data and user values for line
-      group_data <- sample_group$group_data %>% group_by(FSfac)
-      
-      #values for plotting purposes
-      x_values <- group_data |> 
-        pull(input$group_x)
-      x_min <- min(x_values)
-      x_max <- max(x_values)
-      
-      
-      ####Having trouble getting multiple lines with different colors with aes_string. Also, the graph is showing as empty!!!
-      g <- ggplot(sample_group$group_data, aes_string(x = isolate(input$group_x), y = isolate(input$group_y))) +
-        geom_point() +
-        geom_smooth(method = "lm", se = FALSE)
-      
-      g
-      
-      
-    }
-  if (input$groups_comp=="school"){
-      #data and user values for line
-      group_data <- sample_group$group_data %>% group_by(SCHLfac)
+  
+  #make sure two variables are selected 
+  observeEvent(input$group_sample, {
+    
+    group_vars <- c(input$group_x, input$group_y)
+    
+    subsetted_data <- my_sample |>
+      mutate(SCHLfac = ifelse(SCHLfac %in% SCHLvals[as.character(20:24)],"College","No College")) |>
+      filter(#cat vars first
+        HHLfac %in% c("English Only","Spanish"),
+        FSfac %in% c("Yes","No")
+      ) %>% #make sure numeric variables are in appropriate range, must use %>% here for {} to work
+      {if("WKHP" %in% group_vars) filter(., WKHP > 0) else .} %>%
+      {if("VALP" %in% group_vars) filter(., !is.na(VALP)) else .} %>%
+      {if("TAXAMT" %in% group_vars) filter(., !is.na(TAXAMT)) else .} %>%
+      {if("GRPIP" %in% group_vars) filter(., GRPIP > 0) else .} %>%
+      {if("GASP" %in% group_vars) filter(., GASP > 0) else .} %>%
+      {if("ELEP" %in% group_vars) filter(., ELEP > 0) else .} %>%
+      {if("WATP" %in% group_vars) filter(., WATP > 0) else .} %>%
+      {if("PINCP" %in% group_vars) filter(., AGEP > 18) else .} %>%
+      {if("JWMNP" %in% group_vars) filter(., !is.na(JWMNP)) else .} 
       
       
-      #values for plotting purposes
-      x_values <- group_data |> 
-        pull(input$group_x)
-      x_min <- min(x_values)
-      x_max <- max(x_values)
+    
+    index <- sample(1:nrow(subsetted_data), 
+                    size = input$group_n, 
+                    replace = TRUE, 
+                    prob = subsetted_data$PWGTP/sum(subsetted_data$PWGTP))
+    sample_group$group_data <- subsetted_data[index, ]
+    sample_group$group_ls <- lm(get(input$group_y) ~ get(input$group_x), data = sample_group$group_data)
+  
       
-      print(x_values)
-      print(input$group_x)
-      print(input$group_y)
-      print(sample_group$group_data)
-      ####Having trouble getting multiple lines with different colors with aes_string
-      g <- ggplot(sample_group$group_data, aes_string(x = isolate(input$group_x), y = isolate(input$group_y))) +
-        geom_point() +
-        geom_smooth(method = "lm", se = FALSE)
-      
-      g
-      
-      
-    }
-  if (input$groups_comp=="lang"){
-      #data and user values for line
-      group_data <- sample_group$group_data %>% group_by(HHLfac)
-      
-      #values for plotting purposes
-      x_values <- group_data |> 
-        pull(input$group_x)
-      x_min <- min(x_values)
-      x_max <- max(x_values)
-      
-      ####Having trouble getting multiple lines with different colors with aes_string
-      g <- ggplot(sample_group$group_data, aes_string(x = isolate(input$group_x), y = isolate(input$group_y))) +
-        geom_point() +
-        geom_smooth(method = "lm", se = FALSE)
-      
-      g
-      
-  }
-})
+    })
+  
+  output$group_scatter <- renderPlot({
+    validate(
+      need(!is.null(input$groups_comp) , "Please select a group"),
+      need(!is.null(sample_group$group_data), "Please click the 'Get a Sample!' button")
+    ) #### Trying to have message show up before plot is made, having trouble here
+    
+    if(input$groups_comp=="snap"){
+        #data and user values for line
+        group_data <- sample_group$group_data %>% group_by(FSfac)
+        
+        #values for plotting purposes
+        x_values <- group_data |> 
+          pull(input$group_x)
+        x_min <- min(x_values)
+        x_max <- max(x_values)
+        
+        
+        ####Having trouble getting multiple lines with different colors with aes_string. Also, the graph is showing as empty!!!
+        g <- ggplot(sample_group$group_data, aes_string(x = isolate(input$group_x), y = isolate(input$group_y), color = FSfac)) +
+          geom_point() +
+          geom_smooth(method = "lm", se = FALSE)
+        
+        g
+        
+        
+      } else if (input$groups_comp=="school"){
+        #data and user values for line
+        group_data <- sample_group$group_data %>% group_by(SCHLfac)
+        
+        
+        #values for plotting purposes
+        x_values <- group_data |> 
+          pull(input$group_x)
+        x_min <- min(x_values)
+        x_max <- max(x_values)
+        
+        print(x_values)
+        print(input$group_x)
+        print(input$group_y)
+        print(sample_group$group_data)
+        ####Having trouble getting multiple lines with different colors with aes_string
+        g <- ggplot(sample_group$group_data, aes_string(x = isolate(input$group_x), y = isolate(input$group_y))) +
+          geom_point() +
+          geom_smooth(method = "lm", se = FALSE)
+        
+        g
+        
+        
+      } else if (input$groups_comp=="lang"){
+        #data and user values for line
+        group_data <- sample_group$group_data %>% group_by(HHLfac)
+        
+        #values for plotting purposes
+        x_values <- group_data |> 
+          pull(input$group_x)
+        x_min <- min(x_values)
+        x_max <- max(x_values)
+        
+        ####Having trouble getting multiple lines with different colors with aes_string
+        g <- ggplot(sample_group$group_data, aes_string(x = isolate(input$group_x), y = isolate(input$group_y))) +
+          geom_point() +
+          geom_smooth(method = "lm", se = FALSE)
+        
+        g
+      }
+  })
 
 }
 
