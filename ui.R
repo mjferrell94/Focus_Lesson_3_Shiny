@@ -304,8 +304,23 @@ dashboardPage(
                 ),
                 mainPanel(
                   fluidRow(
-                    plotOutput("group_scatter")
-                    
+                    box(
+                      width = 12,
+                      plotlyOutput("group_scatter"),
+                      conditionalPanel("input.group_sample",
+                                       radioButtons("groups_fit", label = "Which Model to Fit?", choices = c("None", "SLR Fit", "Separate SLR Fits"), selected = "None", inline = TRUE)
+                      )
+                    ),
+                    conditionalPanel("input.groups_fit != 'None'",
+                                     box(
+                                       width = 6, 
+                                       tableOutput("groups_info")
+                                     ),
+                                     box(
+                                       width = 6, 
+                                       uiOutput("groups_fits")
+                                     )
+                                     )
                   )
                 )
               )

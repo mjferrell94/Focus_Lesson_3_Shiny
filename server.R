@@ -11,7 +11,15 @@ library(shiny)
 library(tidyverse)
 library(plotly)
 
+#get rid of scientific notation...
+options(scipen =6)
+
 my_sample <- readRDS("my_sample_temp.rds")
+
+#function to map df variable names to descriptive ones
+get_descriptive_name <- function(var) {
+  names(numeric_vars)[which(var == numeric_vars)]
+}
 
 function(input, output, session) {
   
@@ -26,10 +34,21 @@ function(input, output, session) {
     corr_y <- input$corr_y
     choices <- numeric_vars
     if (corr_x == corr_y){
-      choices <- choices[-which(choices == corr_x)]
+      choices2 <- choices[-which(choices == corr_x)]
       updateSelectizeInput(session,
                            "corr_y",
-                           choices = choices)
+                           choices = choices2)
+    } else {
+      updateSelectizeInput(session,
+                           "corr_x",
+                           choices = choices[-which(choices == corr_y)],
+                           selected = corr_x
+                           )
+      updateSelectizeInput(session,
+                           "corr_y",
+                           choices = choices[-which(choices == corr_x)],
+                           selected = corr_y
+      )
     }
     if (((input$corr_x == "GRPIP") & (input$corr_y %in% c("TAXAMT", "VALP"))) | ((input$corr_y == "GRPIP") & (input$corr_x %in% c("TAXAMT", "VALP")))){
       shinyalert(title = "Oh no!", "Those with Property taxes and/or Property Values usually don't have a rent payment. Please select a different combination of variables.", type = "error")
@@ -115,7 +134,9 @@ function(input, output, session) {
       need(!is.null(sample_corr$corr_data), "Please select your variables, subset, and click the 'Get a Sample!' button.")
     )
     g <- ggplot(sample_corr$corr_data, aes_string(x = isolate(input$corr_x), y = isolate(input$corr_y))) +
-      geom_point() 
+      geom_point() +
+      xlab(get_descriptive_name(isolate(input$corr_x))) +
+      ylab(get_descriptive_name(isolate(input$corr_y)))
     ggplotly(g)
     })
   
@@ -153,10 +174,21 @@ function(input, output, session) {
       slr_y <- input$slr_y
       choices <- numeric_vars
       if (slr_x == slr_y){
-        choices <- choices[-which(choices == slr_x)]
+        choices2 <- choices[-which(choices == slr_x)]
         updateSelectizeInput(session,
                              "slr_y",
-                             choices = choices)
+                             choices = choices2)
+      } else {
+        updateSelectizeInput(session,
+                             "slr_x",
+                             choices = choices[-which(choices == slr_y)],
+                             selected = slr_x
+        )
+        updateSelectizeInput(session,
+                             "slr_y",
+                             choices = choices[-which(choices == slr_x)],
+                             selected = slr_y
+        )
       }
       if (((input$slr_x == "GRPIP") & (input$slr_y %in% c("TAXAMT", "VALP"))) | ((input$slr_y == "GRPIP") & (input$slr_x %in% c("TAXAMT", "VALP")))){
         shinyalert(title = "Oh no!", "Those with Property taxes and/or Property Values usually don't have a rent payment. Please select a different combination of variables.", type = "error")
@@ -356,7 +388,9 @@ function(input, output, session) {
                         y = y, 
                         color = "User Line")) + 
           labs(color = "Legend") + 
-          scale_color_manual(values = colors)
+          scale_color_manual(values = colors) +
+          xlab(get_descriptive_name(isolate(input$corr_x))) +
+          ylab(get_descriptive_name(isolate(input$corr_y)))
         tooltip <- c("x", "y", "color")
         ggplotly(g, tooltip = tooltip)
         ##Just the main plot and user residuals
@@ -379,7 +413,9 @@ function(input, output, session) {
                        linetype = "dashed", 
                        linewidth = 0.25)+ 
           labs(color = "Legend") + 
-          scale_color_manual(values = colors)
+          scale_color_manual(values = colors) +
+          xlab(get_descriptive_name(isolate(input$corr_x))) +
+          ylab(get_descriptive_name(isolate(input$corr_y)))
         tooltip <- c("x", "y", "color", "label")
         ggplotly(g, tooltip = tooltip)
         ##Just the main plot and SLR fit
@@ -397,7 +433,9 @@ function(input, output, session) {
                       se = FALSE, 
                       aes(color = "Least Squares Line")) +
           labs(color = "Legend") + 
-          scale_color_manual(values = colors)
+          scale_color_manual(values = colors) +
+          xlab(get_descriptive_name(isolate(input$corr_x))) +
+          ylab(get_descriptive_name(isolate(input$corr_y)))
         tooltip <- c("x", "y", "color")
         ggplotly(g, tooltip = tooltip)
         ##User line residuals and LS line
@@ -423,7 +461,9 @@ function(input, output, session) {
                        linetype = "dashed", 
                        linewidth = 0.25)+ 
         labs(color = "Legend") + 
-          scale_color_manual(values = colors)
+          scale_color_manual(values = colors) +
+          xlab(get_descriptive_name(isolate(input$corr_x))) +
+          ylab(get_descriptive_name(isolate(input$corr_y)))
         tooltip <- c("x", "y", "color", "label")
         ggplotly(g, tooltip = tooltip)
         ##main plot, LS line, and LS resids
@@ -449,7 +489,9 @@ function(input, output, session) {
                        linetype = "dotted", 
                        linewidth = 0.25) + 
           labs(color = "Legend") + 
-          scale_color_manual(values = colors)
+          scale_color_manual(values = colors) +
+          xlab(get_descriptive_name(isolate(input$corr_x))) +
+          ylab(get_descriptive_name(isolate(input$corr_y)))
         tooltip <- c("x", "y", "color", "label")
         ggplotly(g, tooltip = tooltip)
         ##all things!
@@ -484,7 +526,9 @@ function(input, output, session) {
                        linetype = "dashed", 
                        linewidth = 0.25)+ 
           labs(color = "Legend") + 
-          scale_color_manual(values = colors)
+          scale_color_manual(values = colors) +
+          xlab(get_descriptive_name(isolate(input$corr_x))) +
+          ylab(get_descriptive_name(isolate(input$corr_y)))
         tooltip <- c("x", "y", "color", "label", "label2")
         ggplotly(g, tooltip = tooltip)
       }
@@ -568,7 +612,9 @@ function(input, output, session) {
         resid_df <- data.frame(x = x_values, y = user_resids)
         g <- ggplot(resid_df, aes(x = x, y = y)) +
           geom_point() +
-          geom_segment(x = min(x_values), xend = max(x_values), y = 0, yend = 0)
+          geom_segment(x = min(x_values), xend = max(x_values), y = 0, yend = 0) +
+          xlab(get_descriptive_name(isolate(input$corr_x))) +
+          ylab("Predicted")
         ggplotly(g)
       } else {
         fit <- sample_slr$slr_ls
@@ -582,6 +628,8 @@ function(input, output, session) {
         g <- ggplot(resid_df, aes(x = x, y = y)) +
           geom_point() +
           geom_segment(x = min(x_values), xend = max(x_values), y = 0, yend = 0) +
+          xlab(get_descriptive_name(isolate(input$corr_x))) +
+          ylab("Predicted") +
           facet_grid(~line)
         ggplotly(g)
       }
@@ -611,7 +659,8 @@ function(input, output, session) {
         resid_df <- data.frame(x = x_values, y = user_resids)
         g <- ggplot(resid_df, aes(sample = y)) +
           stat_qq() +
-          stat_qq_line()
+          stat_qq_line() + 
+          
         ggplotly(g)
       } else {
         fit <- sample_slr$slr_ls
@@ -632,7 +681,7 @@ function(input, output, session) {
     
 #################################################
 ##Group SLR Stuff
-  sample_group <- reactiveValues(group_data = NULL, group_ls = NULL)
+  sample_group <- reactiveValues(group_data = NULL)
   
   #update input boxes so they can't choose the same variable
   observeEvent(c(input$group_x, input$group_y), {
@@ -640,10 +689,21 @@ function(input, output, session) {
     group_y <- input$group_y
     choices <- numeric_vars
     if (group_x == group_y){
-      choices <- choices[-which(choices == group_x)]
+      choices2 <- choices[-which(choices == group_x)]
       updateSelectizeInput(session,
                            "group_y",
-                           choices = choices)
+                           choices = choices2)
+    } else {
+      updateSelectizeInput(session,
+                           "group_x",
+                           choices = choices[-which(choices == group_y)],
+                           selected = group_x
+      )
+      updateSelectizeInput(session,
+                           "group_y",
+                           choices = choices[-which(choices == group_x)],
+                           selected = group_y
+      )
     }
     if (((input$group_x == "GRPIP") & (input$group_y %in% c("TAXAMT", "VALP"))) | ((input$group_y == "GRPIP") & (input$group_x %in% c("TAXAMT", "VALP")))){
       shinyalert(title = "Oh no!", "Those with Property taxes and/or Property Values usually don't have a rent payment. Please select a different combination of variables.", type = "error")
@@ -664,103 +724,238 @@ function(input, output, session) {
   #make sure two variables are selected 
   observeEvent(input$group_sample, {
     
-    group_vars <- c(input$group_x, input$group_y)
-    
-    subsetted_data <- my_sample |>
-      mutate(SCHLfac = ifelse(SCHLfac %in% SCHLvals[as.character(20:24)],"College","No College")) |>
-      filter(#cat vars first
-        HHLfac %in% c("English Only","Spanish"),
-        FSfac %in% c("Yes","No")
-      ) %>% #make sure numeric variables are in appropriate range, must use %>% here for {} to work
-      {if("WKHP" %in% group_vars) filter(., WKHP > 0) else .} %>%
-      {if("VALP" %in% group_vars) filter(., !is.na(VALP)) else .} %>%
-      {if("TAXAMT" %in% group_vars) filter(., !is.na(TAXAMT)) else .} %>%
-      {if("GRPIP" %in% group_vars) filter(., GRPIP > 0) else .} %>%
-      {if("GASP" %in% group_vars) filter(., GASP > 0) else .} %>%
-      {if("ELEP" %in% group_vars) filter(., ELEP > 0) else .} %>%
-      {if("WATP" %in% group_vars) filter(., WATP > 0) else .} %>%
-      {if("PINCP" %in% group_vars) filter(., AGEP > 18) else .} %>%
-      {if("JWMNP" %in% group_vars) filter(., !is.na(JWMNP)) else .} 
+    if(is.null(input$groups_comp)){
+      shinyalert(title = "Grouping Needed!", "Please use the radio buttons to select a group first.", type = "error")
+    } else {
+      groups_comp <- input$groups_comp
+      if (groups_comp == "lang") {
+        group_variable <- "HHLfac"
+      } else if(groups_comp == "snap"){
+        group_variable <- "FSfac"
+      } else if(groups_comp == "school"){
+        group_variable <- "SCHLfac"
+      }
+      group_vars <- c(input$group_x, input$group_y)
       
+      subsetted_data <- my_sample |>
+        mutate(SCHLfac = ifelse(SCHLfac %in% SCHLvals[as.character(20:24)],"College","No College")) %>%
+        #filter(#cat vars first
+        #  HHLfac %in% c("English Only","Spanish"),
+        #  FSfac %in% c("Yes","No")
+        #) %>% #make sure numeric variables are in appropriate range, must use %>% here for {} to work
+        {if("WKHP" %in% group_vars) filter(., WKHP > 0) else .} %>%
+        {if("VALP" %in% group_vars) filter(., !is.na(VALP)) else .} %>%
+        {if("TAXAMT" %in% group_vars) filter(., !is.na(TAXAMT)) else .} %>%
+        {if("GRPIP" %in% group_vars) filter(., GRPIP > 0) else .} %>%
+        {if("GASP" %in% group_vars) filter(., GASP > 0) else .} %>%
+        {if("ELEP" %in% group_vars) filter(., ELEP > 0) else .} %>%
+        {if("WATP" %in% group_vars) filter(., WATP > 0) else .} %>%
+        {if("PINCP" %in% group_vars) filter(., AGEP > 18) else .} %>%
+        {if("JWMNP" %in% group_vars) filter(., !is.na(JWMNP)) else .} 
+        
+      #if lang selected, subset data appropriately
+      if (groups_comp == "lang") {#filter to have only english and spanish
+        subsetted_data <- subsetted_data |>
+          filter(HHLfac %in% c("English Only", "Spanish"))
+      }
       
-    
-    index <- sample(1:nrow(subsetted_data), 
-                    size = input$group_n, 
-                    replace = TRUE, 
-                    prob = subsetted_data$PWGTP/sum(subsetted_data$PWGTP))
-    sample_group$group_data <- subsetted_data[index, ]
-    sample_group$group_ls <- lm(get(input$group_y) ~ get(input$group_x), data = sample_group$group_data)
-  
-      
+      #make sure we get at least two observations per group so we can fit our line.
+      two_values <- FALSE
+      while(!two_values){
+        index <- sample(1:nrow(subsetted_data), 
+                        size = input$group_n, 
+                        replace = TRUE, 
+                        prob = subsetted_data$PWGTP/sum(subsetted_data$PWGTP))
+        temp <- sample_group$group_data <- subsetted_data[index, ]
+        temp_counts <- temp |>
+          group_by(get(group_variable)) |>
+          summarize(count = n())
+        if(temp_counts$count[1] >1 & temp_counts$count[2] > 1){
+          two_values <- TRUE
+        }
+      }
+      sample_group$group_data <- temp
+      #fit linear models
+      #just slr
+      # sample_group$group_joint_lm <- lm(get(input$group_y) ~ get(input$group_x), data = sample_group$group_data)
+      # #on just 1st group
+      # sample_group$sub1 <- sample_group$group_data %>%
+      #   {if(groups_comp == "lang") filter(., HHLfac == "English Only") else .} %>%
+      #   {if(groups_comp == "school") filter(., SCHLfac == "College") else .} %>%
+      #   {if(groups_comp == "snap") filter(., FSfac == "Yes") else .}
+      # sample_group$group_1_lm <- lm(get(input$group_y) ~ get(input$group_x), data = sample_group$sub1)
+      # #on just 2nd group
+      # sample_group$sub2 <- sample_group$group_data %>%
+      #   {if(groups_comp == "lang") filter(., HHLfac == "Spanish") else .} %>%
+      #   {if(groups_comp == "school") filter(., SCHLfac == "No College") else .} %>%
+      #   {if(groups_comp == "snap") filter(., FSfac == "No") else .}
+      # sample_group$group_2_lm <- lm(get(input$group_y) ~ get(input$group_x), data = sample_group$sub2)
+      # #with different intercepts
+      # if(groups_comp == "lang") {
+      #   int_formula <- formula(get(input$group_y) ~ get(input$group_x) + HHLfac)
+      # } else if (groups_comp == "school") {
+      #   int_formula <- formula(get(input$group_y) ~ get(input$group_x) + SCHLfac)
+      # } else {
+      #   int_formula <- formula(get(input$group_y) ~ get(input$group_x) + FSfac)
+      # }
+      # sample_group$group_intercepts_lm <- lm(int_formula, data = sample_group$group_data)
+      # #with different intercepts and slopes
+      # if(groups_comp == "lang") {
+      #   full_formula <- formula(get(input$group_y) ~ get(input$group_x)*HHLfac)
+      # } else if (groups_comp == "school") {
+      #   full_formula <- formula(get(input$group_y) ~ get(input$group_x)*SCHLfac)
+      # } else {
+      #   full_formula <- formula(get(input$group_y) ~ get(input$group_x)*FSfac)
+      # }
+      # sample_group$group_full_lm <- lm(full_formula, data = sample_group$group_data)
+    }
     })
   
-  output$group_scatter <- renderPlot({
-    validate(
-      need(!is.null(input$groups_comp) , "Please select a group"),
-      need(!is.null(sample_group$group_data), "Please click the 'Get a Sample!' button")
-    ) #### Trying to have message show up before plot is made, having trouble here
+  
+  output$group_scatter <- renderPlotly({
+
+    groups_comp <- isolate(input$groups_comp)
     
-    if(input$groups_comp=="snap"){
+    validate(
+      need(!is.null(groups_comp) , "Please select a group"),
+      need(!is.null(sample_group$group_data), "Please click the 'Get a Sample!' button")
+    )
+
+    
+    x_variable <- isolate(input$group_x)
+    y_variable <- isolate(input$group_y)
+    
+    if(groups_comp == "snap"){
         #data and user values for line
-        group_data <- sample_group$group_data %>% group_by(FSfac)
+        group_data <- sample_group$group_data 
         
-        #values for plotting purposes
-        x_values <- group_data |> 
-          pull(input$group_x)
-        x_min <- min(x_values)
-        x_max <- max(x_values)
-        
-        
-        ####Having trouble getting multiple lines with different colors with aes_string. Also, the graph is showing as empty!!!
-        g <- ggplot(sample_group$group_data, aes_string(x = isolate(input$group_x), y = isolate(input$group_y), color = FSfac)) +
-          geom_point() +
-          geom_smooth(method = "lm", se = FALSE)
-        
-        g
-        
-        
-      } else if (input$groups_comp=="school"){
+        g <- ggplot(group_data, aes_string(x = x_variable, y = y_variable)) +
+          geom_point(aes(col = FSfac)) +
+          scale_color_discrete(name = "SNAP Benefit?")
+        if(input$groups_fit == "Separate SLR Fits") { 
+          g <- g +
+            geom_smooth(method = "lm", aes(col = FSfac), se = FALSE) 
+        } else if(input$groups_fit == "SLR Fit") {
+          g <- g +
+            geom_smooth(method = "lm", se = FALSE)
+        }
+      } else if (groups_comp=="school"){
         #data and user values for line
-        group_data <- sample_group$group_data %>% group_by(SCHLfac)
+        group_data <- sample_group$group_data 
         
-        
-        #values for plotting purposes
-        x_values <- group_data |> 
-          pull(input$group_x)
-        x_min <- min(x_values)
-        x_max <- max(x_values)
-        
-        print(x_values)
-        print(input$group_x)
-        print(input$group_y)
-        print(sample_group$group_data)
-        ####Having trouble getting multiple lines with different colors with aes_string
-        g <- ggplot(sample_group$group_data, aes_string(x = isolate(input$group_x), y = isolate(input$group_y))) +
-          geom_point() +
-          geom_smooth(method = "lm", se = FALSE)
-        
-        g
-        
-        
-      } else if (input$groups_comp=="lang"){
+        g <- ggplot(group_data, aes_string(x = x_variable, y = y_variable)) +
+          geom_point(aes(col = SCHLfac)) +
+          scale_color_discrete(name = "Education")
+        if(input$groups_fit == "Separate SLR Fits") { 
+          g <- g +
+            geom_smooth(method = "lm", aes(col = SCHLfac), se = FALSE) 
+        } else if(input$groups_fit == "SLR Fit") {
+          g <- g +
+            geom_smooth(method = "lm", se = FALSE)
+        }
+      } else if (groups_comp =="lang"){
         #data and user values for line
-        group_data <- sample_group$group_data %>% group_by(HHLfac)
+        group_data <- sample_group$group_data 
         
-        #values for plotting purposes
-        x_values <- group_data |> 
-          pull(input$group_x)
-        x_min <- min(x_values)
-        x_max <- max(x_values)
-        
-        ####Having trouble getting multiple lines with different colors with aes_string
-        g <- ggplot(sample_group$group_data, aes_string(x = isolate(input$group_x), y = isolate(input$group_y))) +
-          geom_point() +
-          geom_smooth(method = "lm", se = FALSE)
-        
-        g
+        g <- ggplot(group_data, aes_string(x = x_variable, y = y_variable)) +
+          geom_point(aes(col = HHLfac)) +
+          scale_color_discrete(name = "Household Language")
+        if(input$groups_fit == "Separate SLR Fits") { 
+          g <- g +
+            geom_smooth(method = "lm", aes(col = HHLfac), se = FALSE) 
+        } else if(input$groups_fit == "SLR Fit") {
+          g <- g +
+            geom_smooth(method = "lm", se = FALSE)
+        }
       }
+    g <- g +
+      xlab(get_descriptive_name(x_variable)) +
+      ylab(get_descriptive_name(y_variable))
+    tooltip <- c("x", "y", "color")
+    ggplotly(g, tooltip = tooltip)
   })
 
+  #produce coef table
+  output$groups_info <- renderTable({
+    if(input$groups_fit == "None"){
+      NULL
+    } else if(input$groups_fit == "Separate SLR Fits"){
+      #fit SLR model 
+      x_variable <- isolate(input$group_x)
+      y_variable <- isolate(input$group_y)
+      group <- isolate(input$groups_comp)
+      if (group == "lang") {
+        group_variable <- "HHLfac"
+        form <- formula(get(y_variable) ~ get(x_variable)*get(group_variable))
+        fit <- lm(form, data = sample_group$group_data)
+        results <- summary(fit)$coefficients
+        dimnames(results)[[1]] <- c("Intercept", "Slope", "Difference in Intercept for Spanish", "Difference in Slope for Spanish")
+        round(results, 5)
+      } else if(group == "snap"){
+        group_variable <- "FSfac"
+        form <- formula(get(y_variable) ~ get(x_variable)*get(group_variable))
+        fit <- lm(form, data = sample_group$group_data)
+        results <- summary(fit)$coefficients
+        dimnames(results)[[1]] <- c("Intercept", "Slope", "Difference in Intercept for No SNAP", "Modification to Slope for No SNAP")
+        round(results, 5)
+      } else if(group == "school"){
+        group_variable <- "SCHLfac"
+        form <- formula(get(y_variable) ~ get(x_variable)*get(group_variable))
+        fit <- lm(form, data = sample_group$group_data)
+        results <- summary(fit)$coefficients
+        dimnames(results)[[1]] <- c("Intercept", "Slope", "Difference in Intercept for No College", "Difference in Slope for No College")
+        round(results, 5)
+      }
+    } else if(input$groups_fit == "SLR Fit"){
+      x_variable <- isolate(input$group_x)
+      y_variable <- isolate(input$group_y)
+      form <- formula(get(y_variable) ~ get(x_variable))
+      fit <- lm(form, data = sample_group$group_data)
+      results <- summary(fit)$coefficients
+      dimnames(results)[[1]] <- c("Intercept", "Slope")
+      round(results, 5)
+    }
+  }, digits = 5, rownames = TRUE)
+  
+  #give equations for line(s)
+  output$groups_fits <- renderUI({
+    if(input$groups_fit == "None"){
+      NULL
+    } else if(input$groups_fit == "Separate SLR Fits"){
+      #fit SLR model 
+      x_variable <- isolate(input$group_x)
+      y_variable <- isolate(input$group_y)
+      group <- isolate(input$groups_comp)
+      if (group == "lang") {
+        group_variable <- "HHLfac"
+      } else if(group == "snap"){
+        group_variable <- "FSfac"
+      } else if(group == "school"){
+        group_variable <- "SCHLfac"
+      }
+      form <- formula(get(y_variable) ~ get(x_variable)*get(group_variable))
+      fit <- lm(form, data = sample_group$group_data)
+      coefs <- coef(fit)
+      if (group == "lang") {
+        x_name <- names(numeric_vars)[which(numeric_vars == x_variable)]
+        withMathJax(paste0("Fitted equation for 'English Only':$$\\hat{y} \\approx ", round(coefs[1], 5), " + ", round(coefs[2], 5), "*(\\mbox{", x_name, "})$$Fitted equation for 'Spanish':$$\\hat{y} \\approx ", round(coefs[1]+coefs[3], 5), " + ", round(coefs[2]+coefs[4], 5), "*(\\mbox{", x_name, "})$$"))
+      } else if(group == "snap"){
+        x_name <- names(numeric_vars)[which(numeric_vars == x_variable)]
+        withMathJax(paste0("Fitted equation for 'SNAP':$$\\hat{y} \\approx ", round(coefs[1], 5), " + ", round(coefs[2], 5), "*(\\mbox{", x_name, "})$$Fitted equation for 'No SNAP':$$\\hat{y} \\approx ", round(coefs[1]+coefs[3], 5), " + ", round(coefs[2]+coefs[4], 5), "*(\\mbox{", x_name, "})$$"))
+      } else if(group == "school"){
+        x_name <- names(numeric_vars)[which(numeric_vars == x_variable)]
+        withMathJax(paste0("Fitted equation for 'College':$$\\hat{y} \\approx ", round(coefs[1], 5), " + ", round(coefs[2], 5), "*(\\mbox{", x_name, "})$$Fitted equation for 'No College':$$\\hat{y} \\approx ", round(coefs[1]+coefs[3], 5), " + ", round(coefs[2]+coefs[4], 5), "*(\\mbox{", x_name, "})$$"))
+      }
+    } else if(input$groups_fit == "SLR Fit"){
+      x_variable <- isolate(input$group_x)
+      y_variable <- isolate(input$group_y)
+      form <- formula(get(y_variable) ~ get(x_variable))
+      fit <- lm(form, data = sample_group$group_data)
+      coefs <- coef(fit)
+      x_name <- names(numeric_vars)[which(numeric_vars == x_variable)]
+      withMathJax(paste0("Fitted equation:$$\\hat{y} \\approx ", round(coefs[1], 4), " + ", round(coefs[2], 5), "*(\\mbox{", x_name, "})$$"))
+    }
+  })
 }
 
 
