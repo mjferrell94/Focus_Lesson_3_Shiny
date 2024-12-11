@@ -677,7 +677,7 @@ function(input, output, session) {
           facet_grid(~line)
         ggplotly(g)
       }
-    })
+    }) 
     
 #################################################
 ##Group SLR Stuff
