@@ -137,6 +137,16 @@ function(input, output, session) {
       geom_point() +
       xlab(get_descriptive_name(isolate(input$corr_x))) +
       ylab(get_descriptive_name(isolate(input$corr_y)))
+    #Format some labels
+    if(input$corr_x %in% c("PINCP", "WATP", "ELEP", "GASP", "GRPIP", "TAXAMT", "VALP")){
+      g <- g + 
+        scale_x_continuous(labels = scales::label_dollar())
+    }
+    if(input$corr_y %in% c("PINCP", "WATP", "ELEP", "GASP", "GRPIP", "TAXAMT", "VALP")){
+      g <- g + 
+        scale_y_continuous(labels = scales::label_dollar())
+    }
+    
     ggplotly(g)
     })
   
@@ -389,8 +399,17 @@ function(input, output, session) {
                         color = "User Line")) + 
           labs(color = "Legend") + 
           scale_color_manual(values = colors) +
-          xlab(get_descriptive_name(isolate(input$corr_x))) +
-          ylab(get_descriptive_name(isolate(input$corr_y)))
+          xlab(get_descriptive_name(isolate(input$slr_x))) +
+          ylab(get_descriptive_name(isolate(input$slr_y)))
+        #Format some labels
+        if(input$slr_x %in% c("PINCP", "WATP", "ELEP", "GASP", "GRPIP", "TAXAMT", "VALP")){
+          g <- g + 
+            scale_x_continuous(labels = scales::label_dollar())
+        }
+        if(input$slr_y %in% c("PINCP", "WATP", "ELEP", "GASP", "GRPIP", "TAXAMT", "VALP")){
+          g <- g + 
+            scale_y_continuous(labels = scales::label_dollar())
+        }
         tooltip <- c("x", "y", "color")
         ggplotly(g, tooltip = tooltip)
         ##Just the main plot and user residuals
@@ -414,8 +433,18 @@ function(input, output, session) {
                        linewidth = 0.25)+ 
           labs(color = "Legend") + 
           scale_color_manual(values = colors) +
-          xlab(get_descriptive_name(isolate(input$corr_x))) +
-          ylab(get_descriptive_name(isolate(input$corr_y)))
+          xlab(get_descriptive_name(isolate(input$slr_x))) +
+          ylab(get_descriptive_name(isolate(input$slr_y)))
+        #Format some labels
+        if(input$slr_x %in% c("PINCP", "WATP", "ELEP", "GASP", "GRPIP", "TAXAMT", "VALP")){
+          g <- g + 
+            scale_x_continuous(labels = scales::label_dollar())
+        }
+        if(input$slr_y %in% c("PINCP", "WATP", "ELEP", "GASP", "GRPIP", "TAXAMT", "VALP")){
+          g <- g + 
+            scale_y_continuous(labels = scales::label_dollar())
+        }
+        
         tooltip <- c("x", "y", "color", "label")
         ggplotly(g, tooltip = tooltip)
         ##Just the main plot and SLR fit
@@ -434,8 +463,18 @@ function(input, output, session) {
                       aes(color = "Least Squares Line")) +
           labs(color = "Legend") + 
           scale_color_manual(values = colors) +
-          xlab(get_descriptive_name(isolate(input$corr_x))) +
-          ylab(get_descriptive_name(isolate(input$corr_y)))
+          xlab(get_descriptive_name(isolate(input$slr_x))) +
+          ylab(get_descriptive_name(isolate(input$slr_y)))
+        #Format some labels
+        if(input$slr_x %in% c("PINCP", "WATP", "ELEP", "GASP", "GRPIP", "TAXAMT", "VALP")){
+          g <- g + 
+            scale_x_continuous(labels = scales::label_dollar())
+        }
+        if(input$slr_y %in% c("PINCP", "WATP", "ELEP", "GASP", "GRPIP", "TAXAMT", "VALP")){
+          g <- g + 
+            scale_y_continuous(labels = scales::label_dollar())
+        }
+        
         tooltip <- c("x", "y", "color")
         ggplotly(g, tooltip = tooltip)
         ##User line residuals and LS line
@@ -462,8 +501,18 @@ function(input, output, session) {
                        linewidth = 0.25)+ 
         labs(color = "Legend") + 
           scale_color_manual(values = colors) +
-          xlab(get_descriptive_name(isolate(input$corr_x))) +
-          ylab(get_descriptive_name(isolate(input$corr_y)))
+          xlab(get_descriptive_name(isolate(input$slr_x))) +
+          ylab(get_descriptive_name(isolate(input$slr_y)))
+        #Format some labels
+        if(input$slr_x %in% c("PINCP", "WATP", "ELEP", "GASP", "GRPIP", "TAXAMT", "VALP")){
+          g <- g + 
+            scale_x_continuous(labels = scales::label_dollar())
+        }
+        if(input$slr_y %in% c("PINCP", "WATP", "ELEP", "GASP", "GRPIP", "TAXAMT", "VALP")){
+          g <- g + 
+            scale_y_continuous(labels = scales::label_dollar())
+        }
+        
         tooltip <- c("x", "y", "color", "label")
         ggplotly(g, tooltip = tooltip)
         ##main plot, LS line, and LS resids
@@ -490,8 +539,18 @@ function(input, output, session) {
                        linewidth = 0.25) + 
           labs(color = "Legend") + 
           scale_color_manual(values = colors) +
-          xlab(get_descriptive_name(isolate(input$corr_x))) +
-          ylab(get_descriptive_name(isolate(input$corr_y)))
+          xlab(get_descriptive_name(isolate(input$slr_x))) +
+          ylab(get_descriptive_name(isolate(input$slr_y)))
+        #Format some labels
+        if(input$slr_x %in% c("PINCP", "WATP", "ELEP", "GASP", "GRPIP", "TAXAMT", "VALP")){
+          g <- g + 
+            scale_x_continuous(labels = scales::label_dollar())
+        }
+        if(input$slr_y %in% c("PINCP", "WATP", "ELEP", "GASP", "GRPIP", "TAXAMT", "VALP")){
+          g <- g + 
+            scale_y_continuous(labels = scales::label_dollar())
+        }
+        
         tooltip <- c("x", "y", "color", "label")
         ggplotly(g, tooltip = tooltip)
         ##all things!
@@ -527,8 +586,18 @@ function(input, output, session) {
                        linewidth = 0.25)+ 
           labs(color = "Legend") + 
           scale_color_manual(values = colors) +
-          xlab(get_descriptive_name(isolate(input$corr_x))) +
-          ylab(get_descriptive_name(isolate(input$corr_y)))
+          xlab(get_descriptive_name(isolate(input$slr_x))) +
+          ylab(get_descriptive_name(isolate(input$slr_y)))
+        #Format some labels
+        if(input$slr_x %in% c("PINCP", "WATP", "ELEP", "GASP", "GRPIP", "TAXAMT", "VALP")){
+          g <- g + 
+            scale_x_continuous(labels = scales::label_dollar())
+        }
+        if(input$slr_y %in% c("PINCP", "WATP", "ELEP", "GASP", "GRPIP", "TAXAMT", "VALP")){
+          g <- g + 
+            scale_y_continuous(labels = scales::label_dollar())
+        }
+        
         tooltip <- c("x", "y", "color", "label", "label2")
         ggplotly(g, tooltip = tooltip)
       }
@@ -560,13 +629,13 @@ function(input, output, session) {
           ls_resids <- true_y - ls_y
           results[2, ] <- c("Least Squares Line", 
                             isolate(input$slr_n)-2,
-                            round(sum(ls_resids^2), 4), 
-                            round(sum(ls_resids^2)/(isolate(input$slr_n)-2), 4),
+                            round(sum(ls_resids^2), 2), 
+                            round(sum(ls_resids^2)/(isolate(input$slr_n)-2), 2),
                             round(sqrt(sum(ls_resids^2)/(isolate(input$slr_n)-2)), 2))
         }
         results
       }
-    })
+    }, digits = 2)
     
     
     #create ls output
@@ -585,7 +654,7 @@ function(input, output, session) {
       } else {
         NULL
       }
-      })
+      }, digits = 4)
 
 
     
@@ -613,8 +682,13 @@ function(input, output, session) {
         g <- ggplot(resid_df, aes(x = x, y = y)) +
           geom_point() +
           geom_segment(x = min(x_values), xend = max(x_values), y = 0, yend = 0) +
-          xlab(get_descriptive_name(isolate(input$corr_x))) +
+          xlab(get_descriptive_name(isolate(input$slr_x))) +
           ylab("Predicted")
+        #Format some labels
+        if(input$slr_x %in% c("PINCP", "WATP", "ELEP", "GASP", "GRPIP", "TAXAMT", "VALP")){
+          g <- g + 
+            scale_x_continuous(labels = scales::label_dollar())
+        }
         ggplotly(g)
       } else {
         fit <- sample_slr$slr_ls
@@ -628,9 +702,13 @@ function(input, output, session) {
         g <- ggplot(resid_df, aes(x = x, y = y)) +
           geom_point() +
           geom_segment(x = min(x_values), xend = max(x_values), y = 0, yend = 0) +
-          xlab(get_descriptive_name(isolate(input$corr_x))) +
+          xlab(get_descriptive_name(isolate(input$slr_x))) +
           ylab("Predicted") +
           facet_grid(~line)
+        if(input$slr_x %in% c("PINCP", "WATP", "ELEP", "GASP", "GRPIP", "TAXAMT", "VALP")){
+          g <- g + 
+            scale_x_continuous(labels = scales::label_dollar())
+        }
         ggplotly(g)
       }
     })
@@ -681,7 +759,7 @@ function(input, output, session) {
     
 #################################################
 ##Group SLR Stuff
-  sample_group <- reactiveValues(group_data = NULL)
+  sample_group <- reactiveValues(group_data = NULL, r2 = NULL, r2full = NULL)
   
   #update input boxes so they can't choose the same variable
   observeEvent(c(input$group_x, input$group_y), {
@@ -759,9 +837,9 @@ function(input, output, session) {
           filter(HHLfac %in% c("English Only", "Spanish"))
       }
       
-      #make sure we get at least two observations per group so we can fit our line.
-      two_values <- FALSE
-      while(!two_values){
+      #make sure we get at least four observations per group so we can fit our line with some reasonable df
+      four_values <- FALSE
+      while(!four_values){
         index <- sample(1:nrow(subsetted_data), 
                         size = input$group_n, 
                         replace = TRUE, 
@@ -770,8 +848,11 @@ function(input, output, session) {
         temp_counts <- temp |>
           group_by(get(group_variable)) |>
           summarize(count = n())
-        if(temp_counts$count[1] >1 & temp_counts$count[2] > 1){
-          two_values <- TRUE
+        temp_counts
+        if(length(temp_counts$count) > 1){
+          if(temp_counts$count[1] >4 & temp_counts$count[2] > 4){
+            four_values <- TRUE
+          }
         }
       }
       sample_group$group_data <- temp
@@ -871,6 +952,14 @@ function(input, output, session) {
     g <- g +
       xlab(get_descriptive_name(x_variable)) +
       ylab(get_descriptive_name(y_variable))
+    if(x_variable %in% c("PINCP", "WATP", "ELEP", "GASP", "GRPIP", "TAXAMT", "VALP")){
+      g <- g + 
+        scale_x_continuous(labels = scales::label_dollar())
+    }
+    if(y_variable %in% c("PINCP", "WATP", "ELEP", "GASP", "GRPIP", "TAXAMT", "VALP")){
+      g <- g + 
+        scale_y_continuous(labels = scales::label_dollar())
+    }
     tooltip <- c("x", "y", "color")
     ggplotly(g, tooltip = tooltip)
   })
@@ -888,6 +977,8 @@ function(input, output, session) {
         group_variable <- "HHLfac"
         form <- formula(get(y_variable) ~ get(x_variable)*get(group_variable))
         fit <- lm(form, data = sample_group$group_data)
+        #late add to just grab R2 as a reactive value
+        sample_group$r2full <- summary(fit)$r.squared
         results <- summary(fit)$coefficients
         dimnames(results)[[1]] <- c("Intercept", "Slope", "Difference in Intercept for Spanish", "Difference in Slope for Spanish")
         round(results, 5)
@@ -895,6 +986,8 @@ function(input, output, session) {
         group_variable <- "FSfac"
         form <- formula(get(y_variable) ~ get(x_variable)*get(group_variable))
         fit <- lm(form, data = sample_group$group_data)
+        #late add to just grab R2 as a reactive value
+        sample_group$r2full <- summary(fit)$r.squared
         results <- summary(fit)$coefficients
         dimnames(results)[[1]] <- c("Intercept", "Slope", "Difference in Intercept for No SNAP", "Modification to Slope for No SNAP")
         round(results, 5)
@@ -902,6 +995,8 @@ function(input, output, session) {
         group_variable <- "SCHLfac"
         form <- formula(get(y_variable) ~ get(x_variable)*get(group_variable))
         fit <- lm(form, data = sample_group$group_data)
+        #late add to just grab R2 as a reactive value
+        sample_group$r2full <- summary(fit)$r.squared
         results <- summary(fit)$coefficients
         dimnames(results)[[1]] <- c("Intercept", "Slope", "Difference in Intercept for No College", "Difference in Slope for No College")
         round(results, 5)
@@ -911,11 +1006,31 @@ function(input, output, session) {
       y_variable <- isolate(input$group_y)
       form <- formula(get(y_variable) ~ get(x_variable))
       fit <- lm(form, data = sample_group$group_data)
+      #late add to just grab R2 as a reactive value
+      sample_group$r2 <- summary(fit)$r.squared
       results <- summary(fit)$coefficients
       dimnames(results)[[1]] <- c("Intercept", "Slope")
       round(results, 5)
     }
-  }, digits = 5, rownames = TRUE)
+  }, digits = 4, rownames = TRUE)
+  
+  #produce R^2...
+  output$r2 <- renderTable({
+    if(input$groups_fit == "SLR Fit"){
+      data.frame("R Squared" = sample_group$r2)
+    } else if(input$groups_fit == "Separate SLR Fits"){
+      #obtain R^2 for basic model
+      x_variable <- isolate(input$group_x)
+      y_variable <- isolate(input$group_y)
+      form <- formula(get(y_variable) ~ get(x_variable))
+      fit <- lm(form, data = sample_group$group_data)
+      #late add to just grab R2 as a reactive value
+      sample_group$r2 <- summary(fit)$r.squared
+      data.frame("Model" = c("Basic SLR", "Separate SLR"),
+                 "R Squared" = c(sample_group$r2, sample_group$r2full))
+    }
+  }, digits = 4)
+  
   
   #give equations for line(s)
   output$groups_fits <- renderUI({
@@ -956,6 +1071,9 @@ function(input, output, session) {
       withMathJax(paste0("Fitted equation:$$\\hat{y} \\approx ", round(coefs[1], 4), " + ", round(coefs[2], 5), "*(\\mbox{", x_name, "})$$"))
     }
   })
+  
+  #give R^2 value for model
+  
 }
 
 
