@@ -319,8 +319,9 @@ dashboardPage(
                                      ),
                                      box(
                                        width = 6, 
-                                       uiOutput("groups_fits")
-                                       
+                                       uiOutput("groups_fits"),
+                                       uiOutput("group_preds"),
+                                       tableOutput("pred_out")
                                      )
                                      )
                   )

@@ -759,7 +759,7 @@ function(input, output, session) {
     
 #################################################
 ##Group SLR Stuff
-  sample_group <- reactiveValues(group_data = NULL, r2 = NULL, r2full = NULL)
+  sample_group <- reactiveValues(group_data = NULL, r2 = NULL, r2full = NULL, fit_full = NULL)
   
   #update input boxes so they can't choose the same variable
   observeEvent(c(input$group_x, input$group_y), {
@@ -979,6 +979,7 @@ function(input, output, session) {
         fit <- lm(form, data = sample_group$group_data)
         #late add to just grab R2 as a reactive value
         sample_group$r2full <- summary(fit)$r.squared
+        sample_group$fit_full <- fit
         results <- summary(fit)$coefficients
         dimnames(results)[[1]] <- c("Intercept", "Slope", "Difference in Intercept for Spanish", "Difference in Slope for Spanish")
         round(results, 5)
@@ -988,6 +989,8 @@ function(input, output, session) {
         fit <- lm(form, data = sample_group$group_data)
         #late add to just grab R2 as a reactive value
         sample_group$r2full <- summary(fit)$r.squared
+        sample_group$fit_full <- fit
+        
         results <- summary(fit)$coefficients
         dimnames(results)[[1]] <- c("Intercept", "Slope", "Difference in Intercept for No SNAP", "Modification to Slope for No SNAP")
         round(results, 5)
@@ -997,6 +1000,8 @@ function(input, output, session) {
         fit <- lm(form, data = sample_group$group_data)
         #late add to just grab R2 as a reactive value
         sample_group$r2full <- summary(fit)$r.squared
+        sample_group$fit_full <- fit
+        
         results <- summary(fit)$coefficients
         dimnames(results)[[1]] <- c("Intercept", "Slope", "Difference in Intercept for No College", "Difference in Slope for No College")
         round(results, 5)
@@ -1072,7 +1077,53 @@ function(input, output, session) {
     }
   })
   
-  #give R^2 value for model
+  #prediction part
+  #slider
+  output$group_preds <- renderUI({
+    g_data <- sample_group$group_data
+    x_variable <- isolate(input$group_x)
+    y_variable <- isolate(input$group_y)
+    
+    sliderInput("pred_x", paste0("Value of ", names(numeric_vars)[which(numeric_vars == x_variable)], " to predict for:"), min = min(g_data[[x_variable]]), max = max(g_data[[x_variable]]), value = mean(g_data[[x_variable]]))
+    })
+  
+  #preds
+  output$pred_out <- renderTable({
+    x_variable <- isolate(input$group_x)
+    y_variable <- isolate(input$group_y)
+    if(input$groups_fit == "Separate SLR Fits"){
+      fit <- sample_group$fit_full
+      if(!is.null(input$pred_x)){
+        reference_pred <- fit$coefficients[1] + fit$coefficients[2]*input$pred_x
+        non_reference_pred <- fit$coefficients[1] + fit$coefficients[3] + fit$coefficients[2]*input$pred_x + fit$coefficients[4]*input$pred_x
+        #group levels
+        group <- isolate(input$groups_comp)
+        if (group == "lang") {
+          data.frame("Group" = c("Spanish", "English"), 
+                     "Prediction" = c(reference_pred, non_reference_pred))
+        } else if(group == "snap"){
+          data.frame("Group" = c("Snap", "No Snap"), 
+                     "Prediction" = c(reference_pred, non_reference_pred))
+        } else if(group == "school"){
+          data.frame("Group" = c("College", "No College"), 
+                     "Prediction" = c(reference_pred, non_reference_pred))
+        }
+      } else {
+        NULL
+      }
+    } else {
+      form <- formula(get(y_variable) ~ get(x_variable))
+      fit <- lm(form, data = sample_group$group_data)
+      #prediction setup
+      if(!is.null(input$pred_x)){
+        prediction <- fit$coefficients[1] + fit$coefficients[2]*input$pred_x
+        names(prediction) <- names(numeric_vars)[which(numeric_vars == y_variable)]
+        data.frame("Prediction" = prediction)
+      }else {
+        NULL
+      }
+    }
+  }, rownames = TRUE)
   
 }
 
