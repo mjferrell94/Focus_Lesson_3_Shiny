@@ -313,12 +313,12 @@ dashboardPage(
                     ),
                     conditionalPanel("input.groups_fit != 'None'",
                                      box(
-                                       width = 6, 
+                                       width = 12, 
                                        tableOutput("groups_info"),
                                        tableOutput("r2")
                                      ),
                                      box(
-                                       width = 6, 
+                                       width = 12, 
                                        uiOutput("groups_fits"),
                                        uiOutput("group_preds"),
                                        tableOutput("pred_out")

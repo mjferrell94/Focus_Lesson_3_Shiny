@@ -683,7 +683,7 @@ function(input, output, session) {
           geom_point() +
           geom_segment(x = min(x_values), xend = max(x_values), y = 0, yend = 0) +
           xlab(get_descriptive_name(isolate(input$slr_x))) +
-          ylab("Predicted")
+          ylab("Residual")
         #Format some labels
         if(input$slr_x %in% c("PINCP", "WATP", "ELEP", "GASP", "GRPIP", "TAXAMT", "VALP")){
           g <- g + 
@@ -703,7 +703,6 @@ function(input, output, session) {
           geom_point() +
           geom_segment(x = min(x_values), xend = max(x_values), y = 0, yend = 0) +
           xlab(get_descriptive_name(isolate(input$slr_x))) +
-          ylab("Predicted") +
           facet_grid(~line)
         if(input$slr_x %in% c("PINCP", "WATP", "ELEP", "GASP", "GRPIP", "TAXAMT", "VALP")){
           g <- g + 
@@ -732,15 +731,7 @@ function(input, output, session) {
         pull(isolate(input$slr_y))
       user_resids <- true_y - user_y
       
-      if(!input$plot_slr_qq){
-        #create one resid plot
-        resid_df <- data.frame(x = x_values, y = user_resids)
-        g <- ggplot(resid_df, aes(sample = y)) +
-          stat_qq() +
-          stat_qq_line() + 
-          
-        ggplotly(g)
-      } else {
+      if(input$plot_slr_qq){
         fit <- sample_slr$slr_ls
         coefs <- coef(fit)
         ls_y <- coefs[1] + coefs[2]*x_values
@@ -754,6 +745,14 @@ function(input, output, session) {
           stat_qq_line() +
           facet_grid(~line)
         ggplotly(g)
+      } else {
+        #create one resid plot
+        resid_df <- data.frame(x = x_values, y = user_resids)
+        g <- ggplot(resid_df, aes(sample = y)) +
+          stat_qq() +
+          stat_qq_line()
+          
+          ggplotly(g)
       }
     }) 
     
@@ -981,7 +980,7 @@ function(input, output, session) {
         sample_group$r2full <- summary(fit)$r.squared
         sample_group$fit_full <- fit
         results <- summary(fit)$coefficients
-        dimnames(results)[[1]] <- c("Intercept", "Slope", "Difference in Intercept for Spanish", "Difference in Slope for Spanish")
+        dimnames(results)[[1]] <- c("Intercept for English", "Slope for English", "Difference in Intercept for Spanish", "Difference in Slope for Spanish")
         round(results, 5)
       } else if(group == "snap"){
         group_variable <- "FSfac"
@@ -992,7 +991,7 @@ function(input, output, session) {
         sample_group$fit_full <- fit
         
         results <- summary(fit)$coefficients
-        dimnames(results)[[1]] <- c("Intercept", "Slope", "Difference in Intercept for No SNAP", "Modification to Slope for No SNAP")
+        dimnames(results)[[1]] <- c("Intercept for SNAP", "Slope for SNAP", "Difference in Intercept for No SNAP", "Difference in Slope for No SNAP")
         round(results, 5)
       } else if(group == "school"){
         group_variable <- "SCHLfac"
@@ -1003,7 +1002,7 @@ function(input, output, session) {
         sample_group$fit_full <- fit
         
         results <- summary(fit)$coefficients
-        dimnames(results)[[1]] <- c("Intercept", "Slope", "Difference in Intercept for No College", "Difference in Slope for No College")
+        dimnames(results)[[1]] <- c("Intercept for College", "Slope for College", "Difference in Intercept for No College", "Difference in Slope for No College")
         round(results, 5)
       }
     } else if(input$groups_fit == "SLR Fit"){
@@ -1031,7 +1030,7 @@ function(input, output, session) {
       fit <- lm(form, data = sample_group$group_data)
       #late add to just grab R2 as a reactive value
       sample_group$r2 <- summary(fit)$r.squared
-      data.frame("Model" = c("Basic SLR", "Separate SLR"),
+      data.frame("Model" = c("Single SLR", "SLR for Each Group"),
                  "R Squared" = c(sample_group$r2, sample_group$r2full))
     }
   }, digits = 4)
